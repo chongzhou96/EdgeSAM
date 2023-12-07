@@ -1,0 +1,9 @@
+torch==2.0.0
+torchvision==0.15.1
+opencv-python==4.8.0.74
+pycocotools==2.0.6
+matplotlib==3.7.2
+gradio==4.7.1
+notebook==7.0.6
+timm==0.4.12
+coremltools==7.1
