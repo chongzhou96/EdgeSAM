@@ -49,24 +49,24 @@ predictor = SamPredictor(sam)
 # Description
 title = "<center><strong><font size='8'>EdgeSAM<font></strong></center>"
 
-description_p = """ # Instructions for point mode
+description_p = """ # Instructions for point mode [[Instructional video](https://huggingface.co/spaces/chongzhou/EdgeSAM/blob/main/assets/point-instructions.mov)]
 
                 1. Upload an image or click one of the provided examples.
                 2. Select the point type.
                 3. Click once or multiple times on the image to indicate the object of interest.
                 4. Click Start to get the segmentation mask.
-                5. The clear button clears all the points.
-                6. The reset button resets both points and the image.
+                5. The Clear button clears all the points.
+                6. The Reset button resets both points and the image.
 
               """
 
-description_b = """ # Instructions for box mode
+description_b = """ # Instructions for box mode [[Instructional video](https://huggingface.co/spaces/chongzhou/EdgeSAM/blob/main/assets/box-instructions.mov)]
 
                 1. Upload an image or click one of the provided examples.
                 2. Click twice on the image (diagonal points of the box).
                 3. Click Start to get the segmentation mask.
-                4. The clear button clears the box.
-                5. The reset button resets both the box and the image.
+                4. The Clear button clears the box.
+                5. The Reset button resets both the box and the image.
 
               """
 
