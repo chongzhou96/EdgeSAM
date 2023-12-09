@@ -473,6 +473,7 @@ with gr.Blocks(css=css, title="EdgeSAM") as demo:
     reset_btn_p.click(reset, outputs=[cond_img_p, segm_img_p])
     tab_p.select(fn=reset_all, outputs=all_outputs)
 
+    cond_img_b.upload(on_image_upload, cond_img_b, [cond_img_b, segm_img_b])
     cond_img_b.select(get_box_with_draw, [cond_img_b], cond_img_b)
     segment_btn_b.click(
         segment_with_box, inputs=[cond_img_b], outputs=[cond_img_b, segm_img_b]
