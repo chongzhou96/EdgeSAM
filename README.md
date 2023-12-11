@@ -19,7 +19,7 @@
 
 https://github.com/chongzhou96/EdgeSAM/assets/15973859/fe1cd104-88dc-4690-a5ea-ff48ae013db3
 
-**Watch the full live demo video: [[YouTube](https://www.youtube.com/watch?v=YYsEQ2vleiE)] [[Bilibili]()]**
+**Watch the full live demo video: [[YouTube](https://www.youtube.com/watch?v=YYsEQ2vleiE)] [[Bilibili](https://www.bilibili.com/video/BV1294y1P7TC/)]**
 
 **EdgeSAM** is an accelerated variant of the Segment Anything Model (SAM), optimized for efficient execution on edge devices with minimal compromise in performance. 
 It achieves a **40-fold speed increase** compared to the original SAM, and outperforms MobileSAM, being **14 times as fast** when deployed on edge devices while enhancing the mIoUs on COCO and LVIS by 2.3 and 3.2 respectively. 
@@ -113,7 +113,25 @@ predictor = SamPredictor(sam)
 predictor.set_image(<your_image>)
 masks, _, _ = predictor.predict(<input_prompts>)
 ```
+
+Since EdgeSAM follows the same encoder-decoder architecture as SAM, their usages are very similiar. One minor difference is that EdgeSAM allows outputting 1, 3, and 4 mask candidates for each prompt, while SAM yields either 1 or 3 masks. For more details, please refer to the [example Jupyter Notebook](https://github.com/chongzhou96/EdgeSAM/blob/master/notebooks/predictor_example.ipynb).
+
 ## Web Demo <a name="demo"></a>
+After installing EdgeSAM and downloading the checkpoints. You can start an interactive web demo with the following command:
+
+```
+python web_demo/gradio_app.py
+```
+
+By default, the demo is hosted on `http://0.0.0.0:8080/` and expects `edge_sam_3x.pth` to be stored in the `weights/` folder. You can change the default behavior by:
+
+```
+python web_demo/gradio_app.py --checkpoint [CHECKPOINT] --server-name [SERVER_NAME] --port [PORT]
+```
+
+Since EdgeSAM can run smoothly on a mobile phone, it's fine if you don't have a GPU.
+
+We've deployed the same web demo in the Hugging Face Space [[link](https://huggingface.co/spaces/chongzhou/EdgeSAM)]. However, since it uses the CPU as the backend and is shared by all users, the experience might not be as good.
 
 ## CoreML Export <a name="coreml"></a>
 
