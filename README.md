@@ -21,6 +21,30 @@ https://github.com/chongzhou96/EdgeSAM/assets/15973859/fe1cd104-88dc-4690-a5ea-f
 
 **Watch the full live demo video: [[YouTube](https://www.youtube.com/watch?v=YYsEQ2vleiE)] [[Bilibili]()]**
 
+**EdgeSAM** is an accelerated variant of the Segment Anything Model (SAM), optimized for efficient execution on edge devices with minimal compromise in performance. 
+It achieves a **40-fold speed increase** compared to the original SAM, and outperforms MobileSAM, being **14 times as fast** when deployed on edge devices while enhancing the mIoUs on COCO and LVIS by 2.3 and 3.2 respectively. 
+EdgeSAM is also the first SAM variant that can run at **over 30 FPS** on an iPhone 14.
+
+<p align="center">
+  <img width="900" alt="compare" src="https://github.com/chongzhou96/EdgeSAM/assets/15973859/95a6f308-7300-4cb4-8b1b-b711cdea3f64">
+</p>
+
+*In this figure, we show the encoder throughput of EdgeSAM compared with SAM and MobileSAM as well as the mIoU performance on the SA-1K dataset (sampled from SA-1B) with box and point prompts.*
+
+<details>
+<summary> <strong>Approach</strong> </summary>
+  Our approach involves distilling the original ViT-based SAM image encoder into a purely CNN-based architecture, better suited for edge devices. We carefully benchmark various distillation strategies and demonstrate that task-agnostic encoder distillation fails to capture the full knowledge embodied in SAM. To overcome this bottleneck, we include both the prompt encoder and mask decoder in the distillation process, with box and point prompts in the loop, so that the distilled model can accurately capture the intricate dynamics between user input and mask generation.
+  
+  <p align="center">
+    <img width="612" alt="arch" src="https://github.com/chongzhou96/EdgeSAM/assets/15973859/e706101a-c3d5-4d99-bea5-c6735ce25237">
+  </p>
+</details>
+
+<details>
+<summary> <strong>Performance</strong> </summary>
+  
+</details>
+
 ## Table of Contents
 
 - [Installation](#installation)
@@ -29,7 +53,7 @@ https://github.com/chongzhou96/EdgeSAM/assets/15973859/fe1cd104-88dc-4690-a5ea-f
 - [CoreML Export](#coreml)
 - [Checkpoints](#checkpoints)
 - [iOS App](#ios)
-- [License](#license)
+- [Acknowledgement](#Acknowledgement)
 - [BibTeX](#cite)
 
 ## Installation <a name="installation"></a>
