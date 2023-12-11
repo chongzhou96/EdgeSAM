@@ -32,17 +32,32 @@ EdgeSAM is also the first SAM variant that can run at **over 30 FPS** on an iPho
 *In this figure, we show the encoder throughput of EdgeSAM compared with SAM and MobileSAM as well as the mIoU performance on the SA-1K dataset (sampled from SA-1B) with box and point prompts.*
 
 <details>
+  
 <summary> <strong>Approach</strong> </summary>
-  Our approach involves distilling the original ViT-based SAM image encoder into a purely CNN-based architecture, better suited for edge devices. We carefully benchmark various distillation strategies and demonstrate that task-agnostic encoder distillation fails to capture the full knowledge embodied in SAM. To overcome this bottleneck, we include both the prompt encoder and mask decoder in the distillation process, with box and point prompts in the loop, so that the distilled model can accurately capture the intricate dynamics between user input and mask generation.
+
+Our approach involves distilling the original ViT-based SAM image encoder into a purely CNN-based architecture, better suited for edge devices. We carefully benchmark various distillation strategies and demonstrate that task-agnostic encoder distillation fails to capture the full knowledge embodied in SAM. To overcome this bottleneck, we include both the prompt encoder and mask decoder in the distillation process, with box and point prompts in the loop, so that the distilled model can accurately capture the intricate dynamics between user input and mask generation.
   
   <p align="center">
     <img width="612" alt="arch" src="https://github.com/chongzhou96/EdgeSAM/assets/15973859/e706101a-c3d5-4d99-bea5-c6735ce25237">
   </p>
+  
 </details>
 
 <details>
+  
 <summary> <strong>Performance</strong> </summary>
   
+| Method      | Train Set | COCO AP | COCO AP<sub>s</sub> | COCO AP<sub>m</sub> | COCO AP<sub>l</sub> | GFLops | MParam. | FPS iPhone 14 | FPS 2080 Ti | FPS 3090 |
+|-------------|-----------|---------|---------------------|---------------------|---------------------|--------|---------|---------------|-------------|----------|
+| SAM         | SA-1B     | 46.1    | 33.6                | 51.9                | 57.7                | 2734.8 | 641.1   | -             | 4.3         | -        |
+| FastSAM     | 2% SA-1B  | 37.9    | 23.9                | 43.4                | 50.0                | 887.6  | 68.2    | -             | -           | 25.0*    |
+| MobileSAM   | 1% SA-1B  | 39.4    | 26.9                | 44.4                | 52.2                | 38.2   | 9.8     | 4.9           | 103.5       | 100.0*   |
+| EdgeSAM     | 1% SA-1B  | 42.2    | 29.6                | 47.6                | 53.9                | 22.1   | 9.6     | 38.7          | 164.3       | -        |
+| EdgeSAM-3x  | 3% SA-1B  | 42.7    | 30.0                | 48.6                | 54.5                | 22.1   | 9.6     | 38.7          | 164.3       | -        |
+| EdgeSAM-10x | 10% SA-1B | 43.0    | 30.3                | 48.9                | 55.1                | 22.1   | 9.6     | 38.7          | 164.3       | -        |
+
+*In this table, we report the mask mAP on the COCO dataset. ViTDet-H is used as the detector, whose box mAP is 58.7, to provide box prompts. For speed benchmarking, we infer both the encoder and decoder (with a single prompt). FLOPs are calculated based on the 1024x1024 input resolution. Numbers denoted by * are copied from MobileSAM. 3x and 10x represent training with more data. Here, we do not apply an additional mask refinement iteration per the setting of the original SAM paper.*
+
 </details>
 
 ## Table of Contents
@@ -53,8 +68,8 @@ EdgeSAM is also the first SAM variant that can run at **over 30 FPS** on an iPho
 - [CoreML Export](#coreml)
 - [Checkpoints](#checkpoints)
 - [iOS App](#ios)
-- [Acknowledgement](#Acknowledgement)
-- [BibTeX](#cite)
+- [Acknowledgements](#acknowledgement)
+- [Citation](#cite)
 
 ## Installation <a name="installation"></a>
 
@@ -97,4 +112,26 @@ sam = sam_model_registry["edge_sam"](checkpoint="<path/to/checkpoint>")
 predictor = SamPredictor(sam)
 predictor.set_image(<your_image>)
 masks, _, _ = predictor.predict(<input_prompts>)
+```
+## Web Demo <a name="demo"></a>
+
+## CoreML Export <a name="coreml"></a>
+
+## Checkpoints <a name="checkpoints"></a>
+
+## iOS App <a name="ios"></a>
+
+## Acknowledgements <a name="acknowledgement"></a>
+This study is supported under the RIE2020 Industry Alignment Fund Industry Collaboration Projects (IAF-ICP) Funding Initiative, as well as cash and in-kind contribution from the industry partner(s). We are grateful to Han Soong Chong for his effort in the demonstration application.
+
+We appreciate the following projects, which enable EdgeSAM: [SAM](https://github.com/facebookresearch/segment-anything), [MobileSAM](https://github.com/ChaoningZhang/MobileSAM), [FastSAM](https://github.com/CASIA-IVA-Lab/FastSAM), [TinyViT](https://github.com/microsoft/Cream), and [RepViT](https://github.com/THU-MIG/RepViT).
+
+## Citation <a name="cite"></a>
+```bibtex
+@article{zhou2023edgesam,
+  title={EdgeSAM: Prompt-In-the-Loop Distillation for On-Device Deployment of SAM},
+  author={Zhou, Chong and Li, Xiangtai and Loy, Chen Change and Dai, Bo},
+  journal={arXiv preprint},
+  year={2023}
+}
 ```
