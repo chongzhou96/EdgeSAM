@@ -186,7 +186,7 @@ Note: You need to unzip the CoreML model packages before usage.
 We are planning to release the iOS app that we used in the live demo to the App Store. Please stay tuned!
 
 ## Acknowledgements <a name="acknowledgement"></a>
-This study is supported under the RIE2020 Industry Alignment Fund Industry Collaboration Projects (IAF-ICP) Funding Initiative, as well as cash and in-kind contribution from the industry partner(s). We are grateful to Han Soong Chong for his effort in the demonstration application.
+This study is supported under the RIE2020 Industry Alignment Fund Industry Collaboration Projects (IAF-ICP) Funding Initiative, as well as cash and in-kind contribution from the industry partner(s). We are grateful to [Han Soong Chong](https://www.linkedin.com/in/hansoong-choong-0493a5155/) for his effort in the demonstration application.
 
 We appreciate the following projects, which enable EdgeSAM: [SAM](https://github.com/facebookresearch/segment-anything), [MobileSAM](https://github.com/ChaoningZhang/MobileSAM), [FastSAM](https://github.com/CASIA-IVA-Lab/FastSAM), [TinyViT](https://github.com/microsoft/Cream), and [RepViT](https://github.com/THU-MIG/RepViT).
 

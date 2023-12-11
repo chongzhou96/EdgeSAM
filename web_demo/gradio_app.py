@@ -47,9 +47,9 @@ mask_generator = SamAutomaticMaskGenerator(sam)
 predictor = SamPredictor(sam)
 
 # Description
-title = "<center><strong><font size='8'>EdgeSAM<font></strong></center>"
+title = "<center><strong><font size='8'>EdgeSAM<font></strong> <a href='https://github.com/chongzhou96/EdgeSAM'><font size='6'>[GitHub]</font></a> </center>"
 
-description_p = """ # Instructions for point mode [[Instructional video](https://huggingface.co/spaces/chongzhou/EdgeSAM/blob/main/assets/point-instructions.mov)]
+description_p = """ # Instructions for point mode [[Instructional video](https://huggingface.co/spaces/chongzhou/EdgeSAM/resolve/main/assets/point-instructions.mov)]
 
                 1. Upload an image or click one of the provided examples.
                 2. Select the point type.
@@ -60,7 +60,7 @@ description_p = """ # Instructions for point mode [[Instructional video](https:/
 
               """
 
-description_b = """ # Instructions for box mode [[Instructional video](https://huggingface.co/spaces/chongzhou/EdgeSAM/blob/main/assets/box-instructions.mov)]
+description_b = """ # Instructions for box mode [[Instructional video](https://huggingface.co/spaces/chongzhou/EdgeSAM/resolve/main/assets/box-instructions.mov)]
 
                 1. Upload an image or click one of the provided examples.
                 2. Click twice on the image (diagonal points of the box).
