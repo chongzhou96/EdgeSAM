@@ -1,3 +1,5 @@
+torch
+torchvision
 opencv-python==4.8.0.74
 pycocotools==2.0.6
 matplotlib==3.7.2

@@ -46,3 +46,6 @@ package-lock.json
 
 # Mac
 *DS_Store*
+
+# assets
+assets
