@@ -145,7 +145,7 @@ python scripts/export_coreml_model.py [CHECKPOINT]
 For decoder:
 
 ```
-python scripts/export_coreml_model.py weights/edge_sam.pth --decoder --use-stability-score
+python scripts/export_coreml_model.py [CHECKPOINT] --decoder --use-stability-score
 ```
 
 Since EdgeSAM doesn't perform knowledge distillation on the IoU token of the original SAM, its IoU predictions might not be reliable. Therefore, we use the stability score for mask selection instead. You can stick to the IoU predictions by removing `--use-stability-score`.
@@ -163,13 +163,24 @@ The following shows the performance reports of the EdgeSAM CoreML models measure
 
   As of `coremltools==7.1`, you may encounter the assertion error during the export, e.g., `assert len(inputs) <= 3 or inputs[3] is None`. One workaround is to comment out this assertion following the traceback path, e.g., `/opt/anaconda3/envs/EdgeSAM/lib/python3.8/site-packages/coremltools/converters/mil/frontend/torch/ops.py line 1573`.
 
-  Since CoreML doesn't support interpolation with dynamic target sizes, the converted CoreML models do not contain the pre-processing, i.e., resize-norm-pad, and the post-processing, i.e., resize back the original size.
+  Since CoreML doesn't support interpolation with dynamic target sizes, the converted CoreML models do not contain the pre-processing, i.e., resize-norm-pad, and the post-processing, i.e., resize back to the original size.
 
-  The encoder takes a `1x3x1024x1024` image as the input and outputs a `1x256x64x64`
+  The encoder takes a `1x3x1024x1024` image as the input and outputs a `1x256x64x64` image embedding. The decoder then takes the image embedding together with point coordinates and point labels as the input. The point coordinates follow the `(height, width)` format with the top-left corner as the `(0, 0)`. The choices of point labels are `0: negative point`, `1: positive point`, `2: top-left corner of box`, and `3: bottom-right corner of box`. 
   
 </details>
 
 ## Checkpoints <a name="checkpoints"></a>
+
+Please download the checkpoints of EdgeSAM from its Hugging Face Space (all the EdgeSAM variants only differ in the number of training images):
+
+| Model               | COCO mAP | PyTorch | CoreML Encoder | CoreML Decoder |
+| ------------------- | -------- | ------- | -------------- | -------------- |
+| SAM                 | 46.1     | -       | -              | -              |
+| EdgeSAM             | 42.1     | [Download](https://huggingface.co/spaces/chongzhou/EdgeSAM/resolve/main/weights/edge_sam.pth)    | [Download](https://huggingface.co/spaces/chongzhou/EdgeSAM/resolve/main/weights/edge_sam_encoder.mlpackage.zip) | [Download](https://huggingface.co/spaces/chongzhou/EdgeSAM/resolve/main/weights/edge_sam_decoder.mlpackage.zip) |
+| EdgeSAM-3x          | 42.7     | [Download](https://huggingface.co/spaces/chongzhou/EdgeSAM/resolve/main/weights/edge_sam_3x.pth) | [Download](https://huggingface.co/spaces/chongzhou/EdgeSAM/resolve/main/weights/edge_sam_3x_encoder.mlpackage.zip) | [Download](https://huggingface.co/spaces/chongzhou/EdgeSAM/resolve/main/weights/edge_sam_3x_decoder.mlpackage.zip) |
+| EdgeSAM-10x         | 43       | TBA     | TBA            | TBA |
+
+Note: You need to unzip the CoreML model packages before usage.
 
 ## iOS App <a name="ios"></a>
 We are planning to release the iOS app that we used in the live demo to the App Store. Please stay tuned!
