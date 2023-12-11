@@ -15,12 +15,11 @@
 [[`Paper`]()] 
 [[`Project Page`](https://mmlab-ntu.github.io/project/edgesam/)]
 [[`Hugging Face Demo`](https://huggingface.co/spaces/chongzhou/EdgeSAM)]
-[[`Live Demo on iPhone`]()]
 [[`iOS App (TBA)`]()]
 
-![](assets/teaser.gif)
+https://github.com/chongzhou96/EdgeSAM/assets/15973859/fe1cd104-88dc-4690-a5ea-ff48ae013db3
 
-**Watch the full live demo video: [link]()**
+**Watch the full live demo video: [[YouTube](https://www.youtube.com/watch?v=YYsEQ2vleiE)] [[Bilibili]()]**
 
 ## Table of Contents
 
@@ -62,8 +61,8 @@ pip install -e .
 
 ```
 mkdir weights
-wget -P weights/ https://huggingface.co/spaces/chongzhou/EdgeSAM/blob/main/weights/edge_sam.pth
-wget -P weights/ https://huggingface.co/spaces/chongzhou/EdgeSAM/blob/main/weights/edge_sam_3x.pth
+wget -P weights/ https://huggingface.co/spaces/chongzhou/EdgeSAM/resolve/main/weights/edge_sam.pth
+wget -P weights/ https://huggingface.co/spaces/chongzhou/EdgeSAM/resolve/main/weights/edge_sam_3x.pth
 ```
 
 2. You can easily incorporate EdgeSAM into your Python code with following lines:
