@@ -114,7 +114,7 @@ predictor.set_image(<your_image>)
 masks, _, _ = predictor.predict(<input_prompts>)
 ```
 
-Since EdgeSAM follows the same encoder-decoder architecture as SAM, their usages are very similiar. One minor difference is that EdgeSAM allows outputting 1, 3, and 4 mask candidates for each prompt, while SAM yields either 1 or 3 masks. For more details, please refer to the [example Jupyter Notebook](https://github.com/chongzhou96/EdgeSAM/blob/master/notebooks/predictor_example.ipynb).
+Since EdgeSAM follows the same encoder-decoder architecture as SAM, their usages are very similar. One minor difference is that EdgeSAM allows outputting 1, 3, and 4 mask candidates for each prompt, while SAM yields either 1 or 3 masks. For more details, please refer to the [example Jupyter Notebook](https://github.com/chongzhou96/EdgeSAM/blob/master/notebooks/predictor_example.ipynb).
 
 ## Web Demo <a name="demo"></a>
 After installing EdgeSAM and downloading the checkpoints. You can start an interactive web demo with the following command:
@@ -134,10 +134,45 @@ Since EdgeSAM can run smoothly on a mobile phone, it's fine if you don't have a 
 We've deployed the same web demo in the Hugging Face Space [[link](https://huggingface.co/spaces/chongzhou/EdgeSAM)]. However, since it uses the CPU as the backend and is shared by all users, the experience might not be as good.
 
 ## CoreML Export <a name="coreml"></a>
+We provide a script that can export a trained EdgeSAM PyTorch model to two CoreML model packages, one for encoder and another for decoder. You can also download the exported CoreML models at [Checkpoints](#checkpoints).
+
+For encoder:
+
+```
+python scripts/export_coreml_model.py [CHECKPOINT]
+```
+
+For decoder:
+
+```
+python scripts/export_coreml_model.py weights/edge_sam.pth --decoder --use-stability-score
+```
+
+Since EdgeSAM doesn't perform knowledge distillation on the IoU token of the original SAM, its IoU predictions might not be reliable. Therefore, we use the stability score for mask selection instead. You can stick to the IoU predictions by removing `--use-stability-score`.
+
+The following shows the performance reports of the EdgeSAM CoreML models measured by Xcode on an iPhone 14 (left: encoder, right: decoder):
+
+<p align="center">
+  
+  ![xcode](https://github.com/chongzhou96/EdgeSAM/assets/15973859/8df54f76-24c9-4ad2-af6d-086b971d073b)
+  
+</p>
+
+<details>
+  <summary> <strong> Known issues and model descriptions </strong> </summary>
+
+  As of `coremltools==7.1`, you may encounter the assertion error during the export, e.g., `assert len(inputs) <= 3 or inputs[3] is None`. One workaround is to comment out this assertion following the traceback path, e.g., `/opt/anaconda3/envs/EdgeSAM/lib/python3.8/site-packages/coremltools/converters/mil/frontend/torch/ops.py line 1573`.
+
+  Since CoreML doesn't support interpolation with dynamic target sizes, the converted CoreML models do not contain the pre-processing, i.e., resize-norm-pad, and the post-processing, i.e., resize back the original size.
+
+  The encoder takes a `1x3x1024x1024` image as the input and outputs a `1x256x64x64`
+  
+</details>
 
 ## Checkpoints <a name="checkpoints"></a>
 
 ## iOS App <a name="ios"></a>
+We are planning to release the iOS app that we used in the live demo to the App Store. Please stay tuned!
 
 ## Acknowledgements <a name="acknowledgement"></a>
 This study is supported under the RIE2020 Industry Alignment Fund Industry Collaboration Projects (IAF-ICP) Funding Initiative, as well as cash and in-kind contribution from the industry partner(s). We are grateful to Han Soong Chong for his effort in the demonstration application.
