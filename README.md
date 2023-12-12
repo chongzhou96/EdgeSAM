@@ -70,6 +70,7 @@ Our approach involves distilling the original ViT-based SAM image encoder into a
 - [iOS App](#ios)
 - [Acknowledgements](#acknowledgement)
 - [Citation](#cite)
+- [License](#license)
 
 ## Installation <a name="installation"></a>
 
@@ -199,3 +200,7 @@ We appreciate the following projects, which enable EdgeSAM: [SAM](https://github
   year={2023}
 }
 ```
+
+## License <a name="license"></a>
+
+This project is licensed under <a rel="license" href="https://github.com/chongzhou96/EdgeSAM/blob/master/LICENSE">NTU S-Lab License 1.0</a>. Redistribution and use should follow this license.
