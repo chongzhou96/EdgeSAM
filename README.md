@@ -16,6 +16,7 @@
 [[`Project Page`](https://mmlab-ntu.github.io/project/edgesam/)]
 [[`Hugging Face Demo`](https://huggingface.co/spaces/chongzhou/EdgeSAM)]
 [[`iOS App (TBA)`]()]
+[[`Auto-Label Images with EdgeSAM`](https://github.com/autodistill/autodistill-grounded-edgesam)]
 
 https://github.com/chongzhou96/EdgeSAM/assets/15973859/fe1cd104-88dc-4690-a5ea-ff48ae013db3
 
