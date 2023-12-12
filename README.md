@@ -12,7 +12,7 @@
 [<sup>1</sup>S-Lab, Nanyang Technological University](https://www.mmlab-ntu.com/), 
 [<sup>2</sup>Shanghai Artificial Intelligence Laboratory](https://www.shlab.org.cn/)
 
-[[`Paper`]()] 
+[[`Paper`](https://arxiv.org/abs/2312.06660)] 
 [[`Project Page`](https://mmlab-ntu.github.io/project/edgesam/)]
 [[`Hugging Face Demo`](https://huggingface.co/spaces/chongzhou/EdgeSAM)]
 [[`iOS App (TBA)`]()]
