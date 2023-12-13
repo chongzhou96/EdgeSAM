@@ -46,36 +46,6 @@ sam.eval()
 mask_generator = SamAutomaticMaskGenerator(sam)
 predictor = SamPredictor(sam)
 
-# Description
-title = "<center><strong><font size='8'>EdgeSAM<font></strong> <a href='https://github.com/chongzhou96/EdgeSAM'><font size='6'>[GitHub]</font></a> </center>"
-
-description_p = """ # Instructions for point mode [[Instructional video](https://huggingface.co/spaces/chongzhou/EdgeSAM/resolve/main/assets/point-instructions.mov)]
-
-                1. Upload an image or click one of the provided examples.
-                2. Select the point type.
-                3. Click once or multiple times on the image to indicate the object of interest.
-                4. Click Start to get the segmentation mask.
-                5. The Clear button clears all the points.
-                6. The Reset button resets both points and the image.
-
-              """
-
-description_b = """ # Instructions for box mode [[Instructional video](https://huggingface.co/spaces/chongzhou/EdgeSAM/resolve/main/assets/box-instructions.mov)]
-
-                1. Upload an image or click one of the provided examples.
-                2. Click twice on the image (diagonal points of the box).
-                3. Click Start to get the segmentation mask.
-                4. The Clear button clears the box.
-                5. The Reset button resets both the box and the image.
-
-              """
-
-description_e = """ # Everything mode is NOT recommended.
-
-                Since EdgeSAM follows the same encoder-decoder architecture as SAM, the everything mode will infer the decoder 32x32=1024 times, which is inefficient, thus a longer processing time is expected.
-
-              """
-
 examples = [
     ["web_demo/assets/1.jpeg"],
     ["web_demo/assets/2.jpeg"],
@@ -95,7 +65,37 @@ examples = [
     ["web_demo/assets/16.jpeg"]
 ]
 
-default_example = examples[0]
+# Description
+title = "<center><strong><font size='8'>EdgeSAM<font></strong> <a href='https://github.com/chongzhou96/EdgeSAM'><font size='6'>[GitHub]</font></a> </center>"
+
+description_p = """ # Instructions for point mode
+
+                1. Upload an image or click one of the provided examples.
+                2. Select the point type.
+                3. Click once or multiple times on the image to indicate the object of interest.
+                4. The Clear button clears all the points.
+                5. The Reset button resets both points and the image.
+
+              """
+
+description_b = """ # Instructions for box mode
+
+                1. Upload an image or click one of the provided examples.
+                2. Click twice on the image (diagonal points of the box).
+                3. The Clear button clears the box.
+                4. The Reset button resets both the box and the image.
+
+              """
+
+description_e = """ # Everything mode is NOT recommended.
+
+                Since EdgeSAM follows the same encoder-decoder architecture as SAM, the everything mode will infer the decoder 32x32=1024 times, which is inefficient, thus a longer processing time is expected.
+
+                1. Upload an image or click one of the provided examples.
+                2. Click Start to get the segmentation mask.
+                3. The Reset button resets the image and masks.
+
+              """
 
 css = "h1 { text-align: center } .about { text-align: justify; padding-left: 10%; padding-right: 10%; }"
 
@@ -103,6 +103,7 @@ global_points = []
 global_point_label = []
 global_box = []
 global_image = None
+global_image_with_prompt = None
 
 
 def reset():
@@ -110,11 +111,13 @@ def reset():
     global global_point_label
     global global_box
     global global_image
+    global global_image_with_prompt
     global_points = []
     global_point_label = []
     global_box = []
     global_image = None
-    return None, None
+    global_image_with_prompt = None
+    return None
 
 
 def reset_all():
@@ -122,14 +125,16 @@ def reset_all():
     global global_point_label
     global global_box
     global global_image
+    global global_image_with_prompt
     global_points = []
     global_point_label = []
     global_box = []
     global_image = None
+    global_image_with_prompt = None
     if args.enable_everything_mode:
-        return None, None, None, None, None, None
+        return None, None, None
     else:
-        return None, None, None, None
+        return None, None
 
 
 def clear():
@@ -137,10 +142,12 @@ def clear():
     global global_point_label
     global global_box
     global global_image
+    global global_image_with_prompt
     global_points = []
     global_point_label = []
     global_box = []
-    return global_image, None
+    global_image_with_prompt = copy.deepcopy(global_image)
+    return global_image
 
 
 def on_image_upload(image, input_size=1024):
@@ -148,6 +155,7 @@ def on_image_upload(image, input_size=1024):
     global global_point_label
     global global_box
     global global_image
+    global global_image_with_prompt
     global_points = []
     global_point_label = []
     global_box = []
@@ -159,11 +167,12 @@ def on_image_upload(image, input_size=1024):
     new_h = int(h * scale)
     image = image.resize((new_w, new_h))
     global_image = copy.deepcopy(image)
+    global_image_with_prompt = copy.deepcopy(image)
     print("Image changed")
     nd_image = np.array(global_image)
     predictor.set_image(nd_image)
 
-    return image, None
+    return image
 
 
 def convert_box(xyxy):
@@ -178,83 +187,36 @@ def convert_box(xyxy):
     return xyxy
 
 
-def get_points_with_draw(image, label, evt: gr.SelectData):
+def segment_with_points(
+        label,
+        evt: gr.SelectData,
+        input_size=1024,
+        better_quality=False,
+        withContours=True,
+        use_retina=True,
+        mask_random_color=False,
+):
     global global_points
     global global_point_label
-    # global global_image
+    global global_image_with_prompt
 
     x, y = evt.index[0], evt.index[1]
-    # x = int(x * scale)
-    # y = int(y * scale)
-    point_radius, point_color = 10, (97, 217, 54) if label == "Positive" else (237, 34, 13)
+    point_radius, point_color = 5, (97, 217, 54) if label == "Positive" else (237, 34, 13)
     global_points.append([x, y])
     global_point_label.append(1 if label == "Positive" else 0)
 
     print(f'global_points: {global_points}')
     print(f'global_point_label: {global_point_label}')
 
-    draw = ImageDraw.Draw(image)
+    draw = ImageDraw.Draw(global_image_with_prompt)
     draw.ellipse(
         [(x - point_radius, y - point_radius), (x + point_radius, y + point_radius)],
         fill=point_color,
     )
-    return image
-
-
-def get_box_with_draw(image, evt: gr.SelectData):
-    global global_box
-    # global global_image
-
-    x, y = evt.index[0], evt.index[1]
-    # x = float(x * scale)
-    # y = float(y * scale)
-    point_radius, point_color, box_outline = 5, (97, 217, 54), 5
-    box_color = (0, 255, 0)
-
-    if len(global_box) == 0:
-        global_box.append([x, y])
-    elif len(global_box) == 1:
-        global_box.append([x, y])
-    elif len(global_box) == 2:
-        global_box = [[x, y]]
-
-    print(f'global_box: {global_box}')
-
-    draw = ImageDraw.Draw(image)
-    draw.ellipse(
-        [(x - point_radius, y - point_radius), (x + point_radius, y + point_radius)],
-        fill=point_color,
-    )
-
-    if len(global_box) == 2:
-        global_box = convert_box(global_box)
-        xy = (global_box[0][0], global_box[0][1], global_box[1][0], global_box[1][1])
-        draw.rectangle(
-            xy,
-            outline=box_color,
-            width=box_outline
-        )
-
-    return image
-
-
-def segment_with_points(
-    image,
-    input_size=1024,
-    better_quality=False,
-    withContours=True,
-    use_retina=True,
-    mask_random_color=False,
-):
-    global global_points
-    global global_point_label
+    image = global_image_with_prompt
 
     global_points_np = np.array(global_points)
     global_point_label_np = np.array(global_point_label)
-
-    if global_points_np.size == 0 and global_point_label_np.size == 0:
-        print("No point selected")
-        return image, image
 
     num_multimask_outputs = 4
 
@@ -286,52 +248,81 @@ def segment_with_points(
         withContours=withContours,
     )
 
-    return image, seg
+    return seg
 
 
 def segment_with_box(
-    image,
-    input_size=1024,
-    better_quality=False,
-    withContours=True,
-    use_retina=True,
-    mask_random_color=False,
+        evt: gr.SelectData,
+        input_size=1024,
+        better_quality=False,
+        withContours=True,
+        use_retina=True,
+        mask_random_color=False,
 ):
     global global_box
-    global_box_np = np.array(global_box)
+    global global_image
+    global global_image_with_prompt
 
-    if global_box_np.size < 4:
-        print("No box selected")
-        return image, image
+    x, y = evt.index[0], evt.index[1]
+    point_radius, point_color, box_outline = 5, (97, 217, 54), 5
+    box_color = (0, 255, 0)
 
-    masks, scores, logits = predictor.predict(
-        box=global_box_np,
-        num_multimask_outputs=1,
+    if len(global_box) == 0:
+        global_box.append([x, y])
+    elif len(global_box) == 1:
+        global_box.append([x, y])
+    elif len(global_box) == 2:
+        global_image_with_prompt = copy.deepcopy(global_image)
+        global_box = [[x, y]]
+
+    print(f'global_box: {global_box}')
+
+    draw = ImageDraw.Draw(global_image_with_prompt)
+    draw.ellipse(
+        [(x - point_radius, y - point_radius), (x + point_radius, y + point_radius)],
+        fill=point_color,
     )
-    annotations = masks
+    image = global_image_with_prompt
 
-    seg = fast_process(
-        annotations=annotations,
-        image=image,
-        device=device,
-        scale=(1024 // input_size),
-        better_quality=better_quality,
-        mask_random_color=mask_random_color,
-        bbox=None,
-        use_retina=use_retina,
-        withContours=withContours,
-    )
+    if len(global_box) == 2:
+        global_box = convert_box(global_box)
+        xy = (global_box[0][0], global_box[0][1], global_box[1][0], global_box[1][1])
+        draw.rectangle(
+            xy,
+            outline=box_color,
+            width=box_outline
+        )
 
-    return image, seg
+        global_box_np = np.array(global_box)
+
+        masks, scores, logits = predictor.predict(
+            box=global_box_np,
+            num_multimask_outputs=1,
+        )
+        annotations = masks
+
+        seg = fast_process(
+            annotations=annotations,
+            image=image,
+            device=device,
+            scale=(1024 // input_size),
+            better_quality=better_quality,
+            mask_random_color=mask_random_color,
+            bbox=None,
+            use_retina=use_retina,
+            withContours=withContours,
+        )
+        return seg
+    return image
 
 
 def segment_everything(
-    image,
-    input_size=1024,
-    better_quality=False,
-    withContours=True,
-    use_retina=True,
-    mask_random_color=True,
+        image,
+        input_size=1024,
+        better_quality=False,
+        withContours=True,
+        use_retina=True,
+        mask_random_color=True,
 ):
     nd_image = np.array(image)
     masks = mask_generator.generate(nd_image)
@@ -351,21 +342,16 @@ def segment_everything(
     return seg
 
 
-cond_img_p = gr.Image(label="Input with points", type="pil")
-cond_img_b = gr.Image(label="Input with box", type="pil")
-cond_img_e = gr.Image(label="Input (everything)", type="pil")
-
-segm_img_p = gr.Image(label="Segmented Image with points", interactive=False, type="pil")
-segm_img_b = gr.Image(label="Segmented Image with box", interactive=False, type="pil")
-segm_img_e = gr.Image(label="Segmented Everything", interactive=False, type="pil")
+img_p = gr.Image(label="Input with points", type="pil")
+img_b = gr.Image(label="Input with box", type="pil")
+img_e = gr.Image(label="Input (everything)", type="pil")
 
 if args.enable_everything_mode:
-    all_outputs = [cond_img_p, cond_img_b, cond_img_e, segm_img_p, segm_img_b, segm_img_e]
+    all_outputs = [img_p, img_b, img_e]
 else:
-    all_outputs = [cond_img_p, cond_img_b, segm_img_p, segm_img_b]
+    all_outputs = [img_p, img_b]
 
 with gr.Blocks(css=css, title="EdgeSAM") as demo:
-
     with gr.Row():
         with gr.Column(scale=1):
             # Title
@@ -375,14 +361,8 @@ with gr.Blocks(css=css, title="EdgeSAM") as demo:
         # Images
         with gr.Row(variant="panel"):
             with gr.Column(scale=1):
-                cond_img_p.render()
-
+                img_p.render()
             with gr.Column(scale=1):
-                segm_img_p.render()
-
-        # Submit & Clear
-        with gr.Row():
-            with gr.Column():
                 with gr.Row():
                     add_or_remove = gr.Radio(
                         ["Positive", "Negative"],
@@ -391,114 +371,93 @@ with gr.Blocks(css=css, title="EdgeSAM") as demo:
                     )
 
                     with gr.Column():
-                        segment_btn_p = gr.Button(
-                            "Start", variant="primary"
-                        )
                         clear_btn_p = gr.Button("Clear", variant="secondary")
                         reset_btn_p = gr.Button("Reset", variant="secondary")
+                with gr.Row():
+                    gr.Markdown(description_p)
 
+        with gr.Row():
+            with gr.Column():
                 gr.Markdown("Try some of the examples below ⬇️")
                 gr.Examples(
                     examples=examples,
-                    inputs=[cond_img_p],
-                    outputs=[cond_img_p, segm_img_p],
-                    examples_per_page=4,
+                    inputs=[img_p],
+                    outputs=[img_p],
+                    examples_per_page=8,
                     fn=on_image_upload,
                     run_on_click=True
                 )
-
-            with gr.Column():
-                # Description
-                gr.Markdown(description_p)
 
     with gr.Tab("Box mode") as tab_b:
         # Images
         with gr.Row(variant="panel"):
             with gr.Column(scale=1):
-                cond_img_b.render()
+                img_b.render()
+            with gr.Row():
+                with gr.Column():
+                    clear_btn_b = gr.Button("Clear", variant="secondary")
+                    reset_btn_b = gr.Button("Reset", variant="secondary")
+                    gr.Markdown(description_b)
 
-            with gr.Column(scale=1):
-                segm_img_b.render()
-
-        # Submit & Clear
         with gr.Row():
             with gr.Column():
-                with gr.Row():
-                    with gr.Column():
-                        segment_btn_b = gr.Button(
-                            "Start", variant="primary"
-                        )
-                        clear_btn_b = gr.Button("Clear", variant="secondary")
-                        reset_btn_b = gr.Button("Reset", variant="secondary")
-
                 gr.Markdown("Try some of the examples below ⬇️")
                 gr.Examples(
                     examples=examples,
-                    inputs=[cond_img_b],
-                    outputs=[cond_img_b, segm_img_b],
-                    examples_per_page=4,
+                    inputs=[img_b],
+                    outputs=[img_b],
+                    examples_per_page=8,
                     fn=on_image_upload,
                     run_on_click=True
                 )
-
-            with gr.Column():
-                # Description
-                gr.Markdown(description_b)
 
     if args.enable_everything_mode:
         with gr.Tab("Everything mode") as tab_e:
             # Images
             with gr.Row(variant="panel"):
                 with gr.Column(scale=1):
-                    cond_img_e.render()
-
+                    img_e.render()
                 with gr.Column(scale=1):
-                    segm_img_e.render()
+                    with gr.Row():
+                        with gr.Column():
+                            segment_btn_e = gr.Button("Start", variant="primary")
+                            reset_btn_e = gr.Button("Reset", variant="secondary")
+                            gr.Markdown(description_e)
 
             # Submit & Clear
             with gr.Row():
                 with gr.Column():
-                    with gr.Row():
-                        with gr.Column():
-                            segment_btn_e = gr.Button(
-                                "Start", variant="primary"
-                            )
-                            reset_btn_e = gr.Button("Reset", variant="secondary")
-
                     gr.Markdown("Try some of the examples below ⬇️")
                     gr.Examples(
                         examples=examples,
-                        inputs=[cond_img_e],
-                        examples_per_page=4,
+                        inputs=[img_e],
+                        examples_per_page=8,
                     )
 
-                with gr.Column():
-                    # Description
-                    gr.Markdown(description_e)
+    # with gr.Row():
+    #     with gr.Column(scale=1):
+    #         gr.Markdown(
+    #             "<center><img src='https://visitor-badge.laobi.icu/badge?page_id=chongzhou/edgesam' alt='visitors'></center>")
 
-    cond_img_p.upload(on_image_upload, cond_img_p, [cond_img_p, segm_img_p])
-    cond_img_p.select(get_points_with_draw, [cond_img_p, add_or_remove], cond_img_p)
-    segment_btn_p.click(
-        segment_with_points, inputs=[cond_img_p], outputs=[cond_img_p, segm_img_p]
-    )
-    clear_btn_p.click(clear, outputs=[cond_img_p, segm_img_p])
-    reset_btn_p.click(reset, outputs=[cond_img_p, segm_img_p])
+    img_p.upload(on_image_upload, img_p, [img_p])
+    img_p.select(segment_with_points, [add_or_remove], img_p)
+
+    clear_btn_p.click(clear, outputs=[img_p])
+    reset_btn_p.click(reset, outputs=[img_p])
     tab_p.select(fn=reset_all, outputs=all_outputs)
 
-    cond_img_b.upload(on_image_upload, cond_img_b, [cond_img_b, segm_img_b])
-    cond_img_b.select(get_box_with_draw, [cond_img_b], cond_img_b)
-    segment_btn_b.click(
-        segment_with_box, inputs=[cond_img_b], outputs=[cond_img_b, segm_img_b]
-    )
-    clear_btn_b.click(clear, outputs=[cond_img_b, segm_img_b])
-    reset_btn_b.click(reset, outputs=[cond_img_b, segm_img_b])
+    img_b.upload(on_image_upload, img_b, [img_b])
+    img_b.select(segment_with_box, outputs=[img_b])
+
+    clear_btn_b.click(clear, outputs=[img_b])
+    reset_btn_b.click(reset, outputs=[img_b])
     tab_b.select(fn=reset_all, outputs=all_outputs)
 
     if args.enable_everything_mode:
         segment_btn_e.click(
-            segment_everything, inputs=[cond_img_e], outputs=segm_img_e
+            segment_everything, inputs=[img_e], outputs=img_e
         )
-        reset_btn_e.click(reset, outputs=[cond_img_e, segm_img_e])
+        reset_btn_e.click(reset, outputs=[img_e])
         tab_e.select(fn=reset_all, outputs=all_outputs)
 
 demo.queue()
