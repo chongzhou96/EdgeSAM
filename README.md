@@ -21,6 +21,12 @@ https://github.com/chongzhou96/EdgeSAM/assets/15973859/fe1cd104-88dc-4690-a5ea-f
 
 **Watch the full live demo video: [[YouTube](https://www.youtube.com/watch?v=YYsEQ2vleiE)] [[Bilibili](https://www.bilibili.com/video/BV1294y1P7TC/)]**
 
+## Updates
+
+* **2023/12/13**: Add ONNX export and speed up the web demo with ONNX as the backend.
+
+## Overview
+
 **EdgeSAM** is an accelerated variant of the Segment Anything Model (SAM), optimized for efficient execution on edge devices with minimal compromise in performance. 
 It achieves a **40-fold speed increase** compared to the original SAM, and outperforms MobileSAM, being **14 times as fast** when deployed on edge devices while enhancing the mIoUs on COCO and LVIS by 2.3 and 3.2 respectively. 
 EdgeSAM is also the first SAM variant that can run at **over 30 FPS** on an iPhone 14.
@@ -65,7 +71,7 @@ Our approach involves distilling the original ViT-based SAM image encoder into a
 - [Installation](#installation)
 - [Usage](#usage)
 - [Web Demo](#demo)
-- [CoreML Export](#coreml)
+- [CoreML / ONNX Export](#export)
 - [Checkpoints](#checkpoints)
 - [iOS App](#ios)
 - [Acknowledgements](#acknowledgement)
@@ -132,10 +138,32 @@ python web_demo/gradio_app.py --checkpoint [CHECKPOINT] --server-name [SERVER_NA
 
 Since EdgeSAM can run smoothly on a mobile phone, it's fine if you don't have a GPU.
 
-We've deployed the same web demo in the Hugging Face Space [[link](https://huggingface.co/spaces/chongzhou/EdgeSAM)]. However, since it uses the CPU as the backend and is shared by all users, the experience might not be as good.
+We've deployed the same web demo in the Hugging Face Space [[link](https://huggingface.co/spaces/chongzhou/EdgeSAM)]. However, since it uses the CPU as the backend and is shared by all users, the experience might not be as good as a local deployment.
 
-## CoreML Export <a name="coreml"></a>
-We provide a script that can export a trained EdgeSAM PyTorch model to two CoreML model packages, one for encoder and another for decoder. You can also download the exported CoreML models at [Checkpoints](#checkpoints).
+**Speed up the web demo with ONNX backend**
+
+1. Install the onnxruntime with `pip install onnxruntime` if your machine doesn't have a GPU or `pip install onnxruntime-gpu` if it does (but don't install both of them). Our implementation is tested under version `1.16.3`.
+
+2. Download the ONNX models to the `weights/` folder:
+
+```
+wget -P weights/ https://huggingface.co/spaces/chongzhou/EdgeSAM/resolve/main/weights/edge_sam_3x_encoder.onnx
+wget -P weights/ https://huggingface.co/spaces/chongzhou/EdgeSAM/resolve/main/weights/edge_sam_3x_decoder.onnx
+```
+
+3. Start the demo:
+
+```
+python web_demo/gradio_app.py --enable-onnx
+```
+
+4. Navigate to http://0.0.0.0:8080 in your browser.
+
+## CoreML / ONNX Export <a name="export"></a>
+
+**CoreML**
+
+We provide a script that can export a trained EdgeSAM PyTorch model to two CoreML model packages, one for the encoder and another for the decoder. You can also download the exported CoreML models at [Checkpoints](#checkpoints).
 
 For encoder:
 
@@ -170,15 +198,31 @@ The following shows the performance reports of the EdgeSAM CoreML models measure
   
 </details>
 
+**ONNX**
+
+Similar to the CoreML export, you can use the following commands to export the encoder and the decoder to ONNX models respectively:
+
+For encoder:
+
+```
+python scripts/export_onnx_model.py [CHECKPOINT]
+```
+
+For decoder:
+
+```
+python scripts/export_onnx_model.py [CHECKPOINT] --decoder --use-stability-score
+```
+
 ## Checkpoints <a name="checkpoints"></a>
 
 Please download the checkpoints of EdgeSAM from its Hugging Face Space (all the EdgeSAM variants only differ in the number of training images):
 
-| Model               | COCO mAP | PyTorch | CoreML Encoder | CoreML Decoder |
+| Model               | COCO mAP | PyTorch | CoreML         | ONNX           |
 | ------------------- | -------- | ------- | -------------- | -------------- |
 | SAM                 | 46.1     | -       | -              | -              |
-| EdgeSAM             | 42.1     | [Download](https://huggingface.co/spaces/chongzhou/EdgeSAM/resolve/main/weights/edge_sam.pth)    | [Download](https://huggingface.co/spaces/chongzhou/EdgeSAM/resolve/main/weights/edge_sam_encoder.mlpackage.zip) | [Download](https://huggingface.co/spaces/chongzhou/EdgeSAM/resolve/main/weights/edge_sam_decoder.mlpackage.zip) |
-| EdgeSAM-3x          | 42.7     | [Download](https://huggingface.co/spaces/chongzhou/EdgeSAM/resolve/main/weights/edge_sam_3x.pth) | [Download](https://huggingface.co/spaces/chongzhou/EdgeSAM/resolve/main/weights/edge_sam_3x_encoder.mlpackage.zip) | [Download](https://huggingface.co/spaces/chongzhou/EdgeSAM/resolve/main/weights/edge_sam_3x_decoder.mlpackage.zip) |
+| EdgeSAM             | 42.1     | [Download](https://huggingface.co/spaces/chongzhou/EdgeSAM/resolve/main/weights/edge_sam.pth) | [[Encoder](https://huggingface.co/spaces/chongzhou/EdgeSAM/resolve/main/weights/edge_sam_encoder.mlpackage.zip)] [[Decoder](https://huggingface.co/spaces/chongzhou/EdgeSAM/resolve/main/weights/edge_sam_decoder.mlpackage.zip)] | [[Encoder](https://huggingface.co/spaces/chongzhou/EdgeSAM/resolve/main/weights/edge_sam_encoder.onnx)] [[Decoder](https://huggingface.co/spaces/chongzhou/EdgeSAM/resolve/main/weights/edge_sam_decoder.onnx)] |
+| EdgeSAM-3x          | 42.7     | [Download](https://huggingface.co/spaces/chongzhou/EdgeSAM/resolve/main/weights/edge_sam_3x.pth) | [[Encoder](https://huggingface.co/spaces/chongzhou/EdgeSAM/resolve/main/weights/edge_sam_3x_encoder.mlpackage.zip)] [[Decoder](https://huggingface.co/spaces/chongzhou/EdgeSAM/resolve/main/weights/edge_sam_3x_decoder.mlpackage.zip)] | [[Encoder](https://huggingface.co/spaces/chongzhou/EdgeSAM/resolve/main/weights/edge_sam_3x_encoder.onnx)] [[Decoder](https://huggingface.co/spaces/chongzhou/EdgeSAM/resolve/main/weights/edge_sam_3x_decoder.onnx)] |
 | EdgeSAM-10x         | 43       | TBA     | TBA            | TBA |
 
 Note: You need to unzip the CoreML model packages before usage.
