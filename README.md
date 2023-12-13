@@ -138,7 +138,7 @@ python web_demo/gradio_app.py --checkpoint [CHECKPOINT] --server-name [SERVER_NA
 
 Since EdgeSAM can run smoothly on a mobile phone, it's fine if you don't have a GPU.
 
-We've deployed the same web demo in the Hugging Face Space [[link](https://huggingface.co/spaces/chongzhou/EdgeSAM)]. However, since it uses the CPU as the backend and is shared by all users, the experience might not be as good as a local deployment.
+We've deployed the same web demo in the Hugging Face Space [[link](https://huggingface.co/spaces/chongzhou/EdgeSAM)]. <del> However, since it uses the CPU as the backend and is shared by all users, the experience might not be as good as a local deployment. </del>  Really appreciate the Hugging Face team for supporting us with the GPU!
 
 **Speed up the web demo with ONNX backend**
 
