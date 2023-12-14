@@ -241,7 +241,7 @@ We appreciate the following projects, which enable EdgeSAM: [SAM](https://github
 @article{zhou2023edgesam,
   title={EdgeSAM: Prompt-In-the-Loop Distillation for On-Device Deployment of SAM},
   author={Zhou, Chong and Li, Xiangtai and Loy, Chen Change and Dai, Bo},
-  journal={arXiv preprint},
+  journal={arXiv preprint arXiv:2312.06660},
   year={2023}
 }
 ```
