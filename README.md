@@ -23,7 +23,7 @@ https://github.com/chongzhou96/EdgeSAM/assets/15973859/fe1cd104-88dc-4690-a5ea-f
 
 ## Updates
 
-
+* **2023/12/16**: EdgeSAM is now supported in segmentation labeling tool [ISAT](https://github.com/yatengLG/ISAT_with_segment_anything)!
 * **2023/12/16**: EdgeSAM is now supported in [Grounded-Segment-Anything](https://github.com/IDEA-Research/Grounded-Segment-Anything). Check out the [grounded-edge-sam demo](https://github.com/IDEA-Research/Grounded-Segment-Anything/blob/main/EfficientSAM/grounded_edge_sam.py). Thanks to the IDEA Research team!
 * **2023/12/14**: [autodistill-grounded-edgesam](https://github.com/autodistill/autodistill-grounded-edgesam) combines Grounding DINO and EdgeSAM to create Grounded EdgeSAM [[blog](https://blog.roboflow.com/how-to-use-grounded-edgesam/)]. Thanks to the Roboflow team!
 * **2023/12/13**: Add ONNX export and speed up the web demo with ONNX as the backend.
