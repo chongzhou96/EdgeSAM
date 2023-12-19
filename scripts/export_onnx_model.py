@@ -1,7 +1,7 @@
 import torch
 import argparse
-from segment_anything import sam_model_registry
-from segment_anything.utils.coreml import SamCoreMLModel
+from edge_sam import sam_model_registry
+from edge_sam.utils.coreml import SamCoreMLModel
 
 
 parser = argparse.ArgumentParser(

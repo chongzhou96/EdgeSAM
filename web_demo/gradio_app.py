@@ -3,8 +3,8 @@
 import torch
 import gradio as gr
 import numpy as np
-from segment_anything import sam_model_registry, SamPredictor
-from segment_anything.onnx import SamPredictorONNX
+from edge_sam import sam_model_registry, SamPredictor
+from edge_sam.onnx import SamPredictorONNX
 from PIL import ImageDraw
 from utils.tools_gradio import fast_process
 import copy
