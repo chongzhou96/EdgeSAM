@@ -118,7 +118,7 @@ wget -P weights/ https://huggingface.co/spaces/chongzhou/EdgeSAM/resolve/main/we
 2. You can easily incorporate EdgeSAM into your Python code with following lines:
 
 ```
-from segment_anything import SamPredictor, sam_model_registry
+from edge_sam import SamPredictor, sam_model_registry
 sam = sam_model_registry["edge_sam"](checkpoint="<path/to/checkpoint>")
 predictor = SamPredictor(sam)
 predictor.set_image(<your_image>)
