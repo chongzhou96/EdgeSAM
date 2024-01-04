@@ -90,7 +90,7 @@ The code requires `python>=3.8` and we use `torch==2.0.0` and `torchvision==0.15
 1. Clone the repository locally:
 
 ```
-git clone git@github.com:chongzhou96/EdgeSAM.git; cd EdgeSAM
+git clone https://github.com/chongzhou96/EdgeSAM.git && cd EdgeSAM
 ```
 
 2. Install additional dependencies:
