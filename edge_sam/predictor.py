@@ -7,7 +7,7 @@
 import numpy as np
 import torch
 
-from .modeling import Sam
+from edge_sam.modeling import Sam
 
 from typing import Optional, Tuple
 
@@ -37,7 +37,7 @@ class SamPredictor:
         self,
         image: np.ndarray,
         image_format: str = "RGB",
-    ) -> None:
+    ) -> torch.Tensor:
         """
         Calculates the image embeddings for the provided image, allowing
         masks to be predicted with the 'predict' method.
@@ -59,14 +59,14 @@ class SamPredictor:
         input_image_torch = torch.as_tensor(input_image, device=self.device)
         input_image_torch = input_image_torch.permute(2, 0, 1).contiguous()[None, :, :, :]
 
-        self.set_torch_image(input_image_torch, image.shape[:2])
+        return self.set_torch_image(input_image_torch, image.shape[:2])
 
     @torch.no_grad()
     def set_torch_image(
         self,
         transformed_image: torch.Tensor,
         original_image_size: Tuple[int, ...],
-    ) -> None:
+    ) -> torch.Tensor:
         """
         Calculates the image embeddings for the provided image, allowing
         masks to be predicted with the 'predict' method. Expects the input
@@ -91,8 +91,11 @@ class SamPredictor:
         self.features = self.model.image_encoder(input_image)
         self.is_image_set = True
 
+        return self.features
+
     def predict(
         self,
+        features: torch.Tensor = None,
         point_coords: Optional[np.ndarray] = None,
         point_labels: Optional[np.ndarray] = None,
         box: Optional[np.ndarray] = None,
@@ -131,8 +134,11 @@ class SamPredictor:
             of masks and H=W=256. These low resolution logits can be passed to
             a subsequent iteration as mask input.
         """
-        if not self.is_image_set:
+        if features is None and not self.is_image_set:
             raise RuntimeError("An image must be set with .set_image(...) before mask prediction.")
+
+        if features is None:
+            features = self.features
 
         # Transform input prompts
         coords_torch, labels_torch, box_torch, mask_input_torch = None, None, None, None
@@ -153,6 +159,7 @@ class SamPredictor:
             mask_input_torch = mask_input_torch[None, :, :, :]
 
         masks, iou_predictions, low_res_masks = self.predict_torch(
+            features,
             coords_torch,
             labels_torch,
             box_torch,
@@ -170,6 +177,7 @@ class SamPredictor:
     @torch.no_grad()
     def predict_torch(
         self,
+        features: torch.Tensor,
         point_coords: Optional[torch.Tensor],
         point_labels: Optional[torch.Tensor],
         boxes: Optional[torch.Tensor] = None,
@@ -211,7 +219,7 @@ class SamPredictor:
             of masks and H=W=256. These low res logits can be passed to
             a subsequent iteration as mask input.
         """
-        if not self.is_image_set:
+        if features is None and not self.is_image_set:
             raise RuntimeError("An image must be set with .set_image(...) before mask prediction.")
 
         if point_coords is not None:
@@ -228,7 +236,7 @@ class SamPredictor:
 
         # Predict masks
         low_res_masks, iou_predictions = self.model.mask_decoder(
-            image_embeddings=self.features,
+            image_embeddings=features,
             image_pe=self.model.prompt_encoder.get_dense_pe(),
             sparse_prompt_embeddings=sparse_embeddings,
             dense_prompt_embeddings=dense_embeddings,

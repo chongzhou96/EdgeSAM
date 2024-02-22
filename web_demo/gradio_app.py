@@ -105,63 +105,43 @@ description_b = """ # Instructions for box mode
 
 css = "h1 { text-align: center } .about { text-align: justify; padding-left: 10%; padding-right: 10%; }"
 
-global_points = []
-global_point_label = []
-global_box = []
-global_image = None
-global_image_with_prompt = None
+
+def reset(session_state):
+    session_state['coord_list'] = []
+    session_state['label_list'] = []
+    session_state['box_list'] = []
+    session_state['ori_image'] = None
+    session_state['image_with_prompt'] = None
+    session_state['feature'] = None
+    return None, session_state
 
 
-def reset():
-    global global_points
-    global global_point_label
-    global global_box
-    global global_image
-    global global_image_with_prompt
-    global_points = []
-    global_point_label = []
-    global_box = []
-    global_image = None
-    global_image_with_prompt = None
-    return None
+def reset_all(session_state):
+    session_state['coord_list'] = []
+    session_state['label_list'] = []
+    session_state['box_list'] = []
+    session_state['ori_image'] = None
+    session_state['image_with_prompt'] = None
+    session_state['feature'] = None
+    return None, None, session_state
 
 
-def reset_all():
-    global global_points
-    global global_point_label
-    global global_box
-    global global_image
-    global global_image_with_prompt
-    global_points = []
-    global_point_label = []
-    global_box = []
-    global_image = None
-    global_image_with_prompt = None
-    return None, None
+def clear(session_state):
+    session_state['coord_list'] = []
+    session_state['label_list'] = []
+    session_state['box_list'] = []
+    session_state['image_with_prompt'] = copy.deepcopy(session_state['ori_image'])
+    return session_state['ori_image'], session_state
 
 
-def clear():
-    global global_points
-    global global_point_label
-    global global_box
-    global global_image
-    global global_image_with_prompt
-    global_points = []
-    global_point_label = []
-    global_box = []
-    global_image_with_prompt = copy.deepcopy(global_image)
-    return global_image
-
-
-def on_image_upload(image, input_size=1024):
-    global global_points
-    global global_point_label
-    global global_box
-    global global_image
-    global global_image_with_prompt
-    global_points = []
-    global_point_label = []
-    global_box = []
+def on_image_upload(
+    image,
+    session_state,
+    input_size=1024
+):
+    session_state['coord_list'] = []
+    session_state['label_list'] = []
+    session_state['box_list'] = []
 
     input_size = int(input_size)
     w, h = image.size
@@ -169,13 +149,13 @@ def on_image_upload(image, input_size=1024):
     new_w = int(w * scale)
     new_h = int(h * scale)
     image = image.resize((new_w, new_h))
-    global_image = copy.deepcopy(image)
-    global_image_with_prompt = copy.deepcopy(image)
+    session_state['ori_image'] = copy.deepcopy(image)
+    session_state['image_with_prompt'] = copy.deepcopy(image)
     print("Image changed")
-    nd_image = np.array(global_image)
-    predictor.set_image(nd_image)
+    nd_image = np.array(image)
+    session_state['feature'] = predictor.set_image(nd_image)
 
-    return image
+    return image, session_state
 
 
 def convert_box(xyxy):
@@ -191,48 +171,47 @@ def convert_box(xyxy):
 
 
 def segment_with_points(
-        label,
-        evt: gr.SelectData,
-        input_size=1024,
-        better_quality=False,
-        withContours=True,
-        use_retina=True,
-        mask_random_color=False,
+    label,
+    session_state,
+    evt: gr.SelectData,
+    input_size=1024,
+    better_quality=False,
+    withContours=True,
+    use_retina=True,
+    mask_random_color=False,
 ):
-    global global_points
-    global global_point_label
-    global global_image_with_prompt
-
     x, y = evt.index[0], evt.index[1]
     point_radius, point_color = 5, (97, 217, 54) if label == "Positive" else (237, 34, 13)
-    global_points.append([x, y])
-    global_point_label.append(1 if label == "Positive" else 0)
+    session_state['coord_list'].append([x, y])
+    session_state['label_list'].append(1 if label == "Positive" else 0)
 
-    print(f'global_points: {global_points}')
-    print(f'global_point_label: {global_point_label}')
+    print(f"coord_list: {session_state['coord_list']}")
+    print(f"label_list: {session_state['label_list']}")
 
-    draw = ImageDraw.Draw(global_image_with_prompt)
+    draw = ImageDraw.Draw(session_state['image_with_prompt'])
     draw.ellipse(
         [(x - point_radius, y - point_radius), (x + point_radius, y + point_radius)],
         fill=point_color,
     )
-    image = global_image_with_prompt
+    image = session_state['image_with_prompt']
 
     if args.enable_onnx:
-        global_points_np = np.array(global_points)[None]
-        global_point_label_np = np.array(global_point_label)[None]
+        coord_np = np.array(session_state['coord_list'])[None]
+        label_np = np.array(session_state['label_list'])[None]
         masks, scores, _ = predictor.predict(
-            point_coords=global_points_np,
-            point_labels=global_point_label_np,
+            features=session_state['feature'],
+            point_coords=coord_np,
+            point_labels=label_np,
         )
         masks = masks.squeeze(0)
         scores = scores.squeeze(0)
     else:
-        global_points_np = np.array(global_points)
-        global_point_label_np = np.array(global_point_label)
+        coord_np = np.array(session_state['coord_list'])
+        label_np = np.array(session_state['label_list'])
         masks, scores, logits = predictor.predict(
-            point_coords=global_points_np,
-            point_labels=global_point_label_np,
+            features=session_state['feature'],
+            point_coords=coord_np,
+            point_labels=label_np,
             num_multimask_outputs=4,
             use_stability_score=True
         )
@@ -255,10 +234,11 @@ def segment_with_points(
         withContours=withContours,
     )
 
-    return seg
+    return seg, session_state
 
 
 def segment_with_box(
+        session_state,
         evt: gr.SelectData,
         input_size=1024,
         better_quality=False,
@@ -266,52 +246,50 @@ def segment_with_box(
         use_retina=True,
         mask_random_color=False,
 ):
-    global global_box
-    global global_image
-    global global_image_with_prompt
-
     x, y = evt.index[0], evt.index[1]
     point_radius, point_color, box_outline = 5, (97, 217, 54), 5
     box_color = (0, 255, 0)
 
-    if len(global_box) == 0:
-        global_box.append([x, y])
-    elif len(global_box) == 1:
-        global_box.append([x, y])
-    elif len(global_box) == 2:
-        global_image_with_prompt = copy.deepcopy(global_image)
-        global_box = [[x, y]]
+    if len(session_state['box_list']) == 0:
+        session_state['box_list'].append([x, y])
+    elif len(session_state['box_list']) == 1:
+        session_state['box_list'].append([x, y])
+    elif len(session_state['box_list']) == 2:
+        session_state['image_with_prompt'] = copy.deepcopy(session_state['ori_image'])
+        session_state['box_list'] = [[x, y]]
 
-    print(f'global_box: {global_box}')
+    print(f"box_list: {session_state['box_list']}")
 
-    draw = ImageDraw.Draw(global_image_with_prompt)
+    draw = ImageDraw.Draw(session_state['image_with_prompt'])
     draw.ellipse(
         [(x - point_radius, y - point_radius), (x + point_radius, y + point_radius)],
         fill=point_color,
     )
-    image = global_image_with_prompt
+    image = session_state['image_with_prompt']
 
-    if len(global_box) == 2:
-        global_box = convert_box(global_box)
-        xy = (global_box[0][0], global_box[0][1], global_box[1][0], global_box[1][1])
+    if len(session_state['box_list']) == 2:
+        box = convert_box(session_state['box_list'])
+        xy = (box[0][0], box[0][1], box[1][0], box[1][1])
         draw.rectangle(
             xy,
             outline=box_color,
             width=box_outline
         )
 
-        global_box_np = np.array(global_box)
+        box_np = np.array(box)
         if args.enable_onnx:
-            point_coords = global_box_np.reshape(2, 2)[None]
+            point_coords = box_np.reshape(2, 2)[None]
             point_labels = np.array([2, 3])[None]
             masks, _, _ = predictor.predict(
+                features=session_state['feature'],
                 point_coords=point_coords,
                 point_labels=point_labels,
             )
             annotations = masks[:, 0, :, :]
         else:
             masks, scores, _ = predictor.predict(
-                box=global_box_np,
+                features=session_state['feature'],
+                box=box_np,
                 num_multimask_outputs=1,
             )
             annotations = masks
@@ -327,13 +305,23 @@ def segment_with_box(
             use_retina=use_retina,
             withContours=withContours,
         )
-        return seg
-    return image
+        return seg, session_state
+    return image, session_state
+
 
 img_p = gr.Image(label="Input with points", type="pil")
 img_b = gr.Image(label="Input with box", type="pil")
 
 with gr.Blocks(css=css, title="EdgeSAM") as demo:
+    session_state = gr.State({
+        'coord_list': [],
+        'label_list': [],
+        'box_list': [],
+        'ori_image': None,
+        'image_with_prompt': None,
+        'feature': None
+    })
+
     with gr.Row():
         with gr.Column(scale=1):
             # Title
@@ -363,8 +351,8 @@ with gr.Blocks(css=css, title="EdgeSAM") as demo:
                 gr.Markdown("Try some of the examples below ⬇️")
                 gr.Examples(
                     examples=examples,
-                    inputs=[img_p],
-                    outputs=[img_p],
+                    inputs=[img_p, session_state],
+                    outputs=[img_p, session_state],
                     examples_per_page=8,
                     fn=on_image_upload,
                     run_on_click=True
@@ -386,31 +374,26 @@ with gr.Blocks(css=css, title="EdgeSAM") as demo:
                 gr.Markdown("Try some of the examples below ⬇️")
                 gr.Examples(
                     examples=examples,
-                    inputs=[img_b],
-                    outputs=[img_b],
+                    inputs=[img_b, session_state],
+                    outputs=[img_b, session_state],
                     examples_per_page=8,
                     fn=on_image_upload,
                     run_on_click=True
                 )
 
-    # with gr.Row():
-    #     with gr.Column(scale=1):
-    #         gr.Markdown(
-    #             "<center><img src='https://visitor-badge.laobi.icu/badge?page_id=chongzhou/edgesam' alt='visitors'></center>")
+    img_p.upload(on_image_upload, [img_p, session_state], [img_p, session_state])
+    img_p.select(segment_with_points, [add_or_remove, session_state], [img_p, session_state])
 
-    img_p.upload(on_image_upload, img_p, [img_p])
-    img_p.select(segment_with_points, [add_or_remove], img_p)
+    clear_btn_p.click(clear, [session_state], [img_p, session_state])
+    reset_btn_p.click(reset, [session_state], [img_p, session_state])
+    tab_p.select(fn=reset_all, inputs=[session_state], outputs=[img_p, img_b, session_state])
 
-    clear_btn_p.click(clear, outputs=[img_p])
-    reset_btn_p.click(reset, outputs=[img_p])
-    tab_p.select(fn=reset_all, outputs=[img_p, img_b])
+    img_b.upload(on_image_upload, [img_b, session_state], [img_b, session_state])
+    img_b.select(segment_with_box, [session_state], [img_b, session_state])
 
-    img_b.upload(on_image_upload, img_b, [img_b])
-    img_b.select(segment_with_box, outputs=[img_b])
-
-    clear_btn_b.click(clear, outputs=[img_b])
-    reset_btn_b.click(reset, outputs=[img_b])
-    tab_b.select(fn=reset_all, outputs=[img_p, img_b])
+    clear_btn_b.click(clear, [session_state], [img_b, session_state])
+    reset_btn_b.click(reset, [session_state], [img_b, session_state])
+    tab_b.select(fn=reset_all, inputs=[session_state], outputs=[img_p, img_b, session_state])
 
 demo.queue()
 demo.launch(server_name=args.server_name, server_port=args.port)

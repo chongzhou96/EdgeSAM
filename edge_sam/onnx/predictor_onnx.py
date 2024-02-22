@@ -60,17 +60,22 @@ class SamPredictorONNX:
         self.features = outputs[0]
         self.is_image_set = True
 
+        return self.features
+
     def predict(
             self,
+            features: np.ndarray = None,
             point_coords: Optional[np.ndarray] = None,
             point_labels: Optional[np.ndarray] = None,
     ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
-        if not self.is_image_set:
+        if features is None and not self.is_image_set:
             raise RuntimeError("An image must be set with .set_image(...) before mask prediction.")
+        if features is None:
+            features = self.features
 
         point_coords = self.transform.apply_coords(point_coords, self.original_size)
         outputs = self.decoder.run(None, {
-            'image_embeddings': self.features,
+            'image_embeddings': features,
             'point_coords': point_coords.astype(np.float32),
             'point_labels': point_labels.astype(np.float32)
         })
