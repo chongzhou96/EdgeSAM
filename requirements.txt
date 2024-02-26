@@ -7,3 +7,10 @@ gradio==4.7.1
 notebook==7.0.6
 timm==0.4.12
 coremltools==7.1
+yacs
+loralib
+kornia
+wandb
+mmengine
+mmcv==2.0.0rc4
+git+https://github.com/facebookresearch/detectron2.git

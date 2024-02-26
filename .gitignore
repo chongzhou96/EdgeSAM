@@ -49,3 +49,8 @@ package-lock.json
 
 # assets
 assets
+
+# generated files
+output/
+teacher_embed/
+datasets/

@@ -23,6 +23,7 @@ class MaskDecoder(nn.Module):
         activation: Type[nn.Module] = nn.GELU,
         iou_head_depth: int = 3,
         iou_head_hidden_dim: int = 256,
+        yield_kd_targets=False,
     ) -> None:
         """
         Predicts masks given an image and prompt embeddings, using a
@@ -41,6 +42,7 @@ class MaskDecoder(nn.Module):
             used to predict mask quality
         """
         super().__init__()
+        self.yield_kd_targets = yield_kd_targets
         self.transformer_dim = transformer_dim
         self.transformer = transformer
 
@@ -75,7 +77,8 @@ class MaskDecoder(nn.Module):
         sparse_prompt_embeddings: torch.Tensor,
         dense_prompt_embeddings: torch.Tensor,
         num_multimask_outputs: int,
-    ) -> Tuple[torch.Tensor, torch.Tensor]:
+        num_prompts=None
+    ) -> Tuple[torch.Tensor, torch.Tensor, dict]:
         """
         Predict masks given image and prompt embeddings.
 
@@ -84,18 +87,26 @@ class MaskDecoder(nn.Module):
           image_pe (torch.Tensor): positional encoding with the shape of image_embeddings
           sparse_prompt_embeddings (torch.Tensor): the embeddings of the points and boxes
           dense_prompt_embeddings (torch.Tensor): the embeddings of the mask inputs
-          num_multimask_outputs (int): the number of masks to predict
-            when disambiguating masks
+          multimask_output (bool): Whether to return multiple masks or a single
+            mask.
 
         Returns:
           torch.Tensor: batched predicted masks
           torch.Tensor: batched predictions of mask quality
         """
+
+        if self.yield_kd_targets:
+            kd_targets = dict()
+        else:
+            kd_targets = None
+
         masks, iou_pred = self.predict_masks(
             image_embeddings=image_embeddings,
             image_pe=image_pe,
             sparse_prompt_embeddings=sparse_prompt_embeddings,
             dense_prompt_embeddings=dense_prompt_embeddings,
+            num_prompts=num_prompts,
+            kd_targets=kd_targets
         )
 
         # Select the correct mask or masks for output
@@ -110,8 +121,10 @@ class MaskDecoder(nn.Module):
 
         masks = masks[:, mask_slice, :, :]
         iou_pred = iou_pred[:, mask_slice]
-
-        # Prepare output
+        if kd_targets is not None:
+            kd_targets['query'] = kd_targets['query'][:, mask_slice]
+        if self.yield_kd_targets:
+            return masks, iou_pred, kd_targets
         return masks, iou_pred
 
     def predict_masks(
@@ -120,6 +133,8 @@ class MaskDecoder(nn.Module):
         image_pe: torch.Tensor,
         sparse_prompt_embeddings: torch.Tensor,
         dense_prompt_embeddings: torch.Tensor,
+        num_prompts=None,
+        kd_targets=None
     ) -> Tuple[torch.Tensor, torch.Tensor]:
         """Predicts masks. See 'forward' for more details."""
         # Concatenate output tokens
@@ -134,7 +149,7 @@ class MaskDecoder(nn.Module):
         b, c, h, w = src.shape
 
         # Run the transformer
-        hs, src = self.transformer(src, pos_src, tokens)
+        hs, src = self.transformer(src, pos_src, tokens, kd_targets)
         iou_token_out = hs[:, 0, :]
         mask_tokens_out = hs[:, 1 : (1 + self.num_mask_tokens), :]
 
@@ -145,12 +160,16 @@ class MaskDecoder(nn.Module):
         for i in range(self.num_mask_tokens):
             hyper_in_list.append(self.output_hypernetworks_mlps[i](mask_tokens_out[:, i, :]))
         hyper_in = torch.stack(hyper_in_list, dim=1)
+
         b, c, h, w = upscaled_embedding.shape
         masks = (hyper_in @ upscaled_embedding.view(b, c, h * w)).view(b, -1, h, w)
 
         # Generate mask quality predictions
         iou_pred = self.iou_prediction_head(iou_token_out)
 
+        if self.yield_kd_targets:
+            kd_targets['query'] = hyper_in
+            kd_targets['feat'] = upscaled_embedding
         return masks, iou_pred
 
 

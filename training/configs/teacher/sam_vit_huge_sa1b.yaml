@@ -1,0 +1,17 @@
+MODEL:
+  NAME: vit_h
+  TYPE: vit_h
+
+TRAIN:
+  EPOCHS: 1
+
+DATA:
+  IMG_SIZE: 1024
+  MEAN_AND_STD_TYPE: default
+  DATASET: sa1b
+  DATA_PATH: datasets/SA-1B
+
+DISTILL:
+  EMBED_DIM: 256
+  SAVE_TEACHER_EMBED: True
+  TEACHER_EMBED_PATH: teacher_embed/sa-1b/

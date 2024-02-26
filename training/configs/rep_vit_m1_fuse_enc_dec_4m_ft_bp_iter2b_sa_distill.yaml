@@ -1,0 +1,38 @@
+MODEL:
+  TYPE: rep_vit_m1
+  DROP_PATH_RATE: 0.0
+  PRETRAINED: output/rep_vit_m1_fuse_sa_distill/default/ckpt_epoch_0.pth
+
+TRAIN:
+  EPOCHS: 5
+  BASE_LR: 3.2e-3
+  MIN_LR: 3.2e-4
+  WARMUP_LR: 3.2e-5
+  WARMUP_EPOCHS: 0
+  WEIGHT_DECAY: 0.05
+  CLIP_GRAD: 0.01
+
+DATA:
+  IMG_SIZE: 1024
+  MEAN_AND_STD_TYPE: default
+  DATASET: sa1b
+  DATA_PATH: datasets/SA-1B/
+  NUM_WORKERS: 4
+  BATCH_SIZE: 4
+
+DISTILL:
+  EMBED_DIM: 256
+  TEACHER_EMBED_PATH: teacher_embed/sa-1b/
+  NO_RAND: True
+  FUSE: True
+  ENCODER_ONLY: False
+  DECODER_BCE: 5.0
+  DECODER_DICE: 5.0
+  MAX_ALLOWED_PROMPTS: 16
+  PROMPT_TYPE: ['box', 'point']
+  DECODE_ITERS: 2
+  POINTS_PER_REFINE_ITER: 1
+  ITER_ON_BOX: True
+  MULTIMASK_OUTPUT: 4
+
+AMP_ENABLE: False

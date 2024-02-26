@@ -13,3 +13,5 @@ from .build_sam import (
 )
 from .predictor import SamPredictor
 from .automatic_mask_generator import SamAutomaticMaskGenerator
+from .config import get_config
+from .build_sam import build_sam_from_config

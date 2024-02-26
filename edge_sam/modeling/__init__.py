@@ -5,6 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 
 from .sam import Sam
+from .sam_batch import SamBatch, PromptEncoderBatch, MaskDecoderBatch
 from .image_encoder import ImageEncoderViT
 from .mask_decoder import MaskDecoder
 from .prompt_encoder import PromptEncoder
