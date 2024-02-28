@@ -32,12 +32,8 @@ from utils import load_checkpoint, load_pretrained, save_checkpoint, \
     dice_loss, sigmoid_focal_loss, sigmoid_ce_loss, calculate_uncertainty
 
 from edge_sam import build_sam_from_config, get_config
-from edge_sam.utils.common import sample_point_in_mask
+from edge_sam.utils.common import sample_point_in_mask, get_uncertain_point_coords_with_randomness, point_sample
 
-from detectron2.projects.point_rend.point_features import (
-    get_uncertain_point_coords_with_randomness,
-    point_sample,
-)
 import loralib
 
 try:

@@ -1,7 +1,7 @@
 MODEL:
   TYPE: rep_vit_m1
   DROP_PATH_RATE: 0.0
-  PRETRAINED: output/rep_vit_m1_fuse_sa_distill/default/ckpt_epoch_0.pth
+  PRETRAINED: output/rep_vit_m1_fuse_sa_distill/default/ckpt_epoch_9.pth
 
 TRAIN:
   EPOCHS: 5
