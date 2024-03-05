@@ -61,7 +61,8 @@ def build_edge_sam(checkpoint=None, upsample_mode="bicubic"):
     image_encoder = RepViT(
         arch="m1",
         img_size=image_size,
-        upsample_mode=upsample_mode
+        upsample_mode=upsample_mode,
+        fuse=True
     )
     return _build_sam(image_encoder, checkpoint)
 

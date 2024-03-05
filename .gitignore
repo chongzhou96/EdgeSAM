@@ -54,4 +54,4 @@ assets
 output/
 teacher_embed/
 datasets/
-weights/
+weights

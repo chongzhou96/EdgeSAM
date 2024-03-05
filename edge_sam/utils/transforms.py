@@ -7,7 +7,7 @@
 import numpy as np
 import torch
 from torch.nn import functional as F
-from torchvision.transforms.functional import resize, to_pil_image  # type: ignore
+from torchvision.transforms.functional import resize, to_pil_image, InterpolationMode  # type: ignore
 
 from copy import deepcopy
 from typing import Tuple
@@ -29,6 +29,11 @@ class ResizeLongestSide:
         """
         target_size = self.get_preprocess_shape(image.shape[0], image.shape[1], self.target_length)
         return np.array(resize(to_pil_image(image), target_size))
+
+    def apply_masks(self, mask, original_size):
+        assert mask.shape[1:] == original_size, 'image and gt_mask size doesn\'t match'
+        target_size = self.get_preprocess_shape(mask.shape[1], mask.shape[2], self.target_length)
+        return np.array(resize(torch.from_numpy(mask), target_size, InterpolationMode.NEAREST))
 
     def apply_coords(self, coords: np.ndarray, original_size: Tuple[int, ...]) -> np.ndarray:
         """
@@ -63,6 +68,11 @@ class ResizeLongestSide:
         return F.interpolate(
             image, target_size, mode="bilinear", align_corners=False, antialias=True
         )
+
+    def apply_masks_torch(self, mask, original_size):
+        assert mask.shape[1:] == original_size, 'image and gt_mask size doesn\'t match'
+        target_size = self.get_preprocess_shape(mask.shape[1], mask.shape[2], self.target_length)
+        return F.interpolate(mask[:, None], target_size, mode="nearest").squeeze(1)
 
     def apply_coords_torch(
         self, coords: torch.Tensor, original_size: Tuple[int, ...]

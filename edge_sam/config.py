@@ -63,16 +63,9 @@ _C.MODEL.PRETRAINED = ''
 _C.MODEL.RESUME = ''
 # Number of classes, overwritten in data preparation
 _C.MODEL.NUM_CLASSES = 1000
-# Dropout rate
-_C.MODEL.DROP_RATE = 0.0
-# Drop path rate
-_C.MODEL.DROP_PATH_RATE = 0.1
-# Label Smoothing
-_C.MODEL.LABEL_SMOOTHING = 0.1
 
 # DISTILL
 _C.DISTILL = CN()
-_C.DISTILL.ENABLED = False
 _C.DISTILL.TEACHER_EMBED_PATH = ''
 _C.DISTILL.SAVE_TEACHER_EMBED = False
 _C.DISTILL.EMBED_DIM = 100
@@ -120,7 +113,7 @@ _C.DISTILL.POINTS_PER_REFINE_ITER = 1
 _C.DISTILL.ITER_ON_BOX = False
 # Enale Point Rend sampling for logits distillation and/or task loss.
 _C.DISTILL.POINT_REND_SAMPLING = False
-# When performing logits distillation, use teacher logits or teach labels (by thresholding).
+# When performing logits distillation, use teacher logits or teacher labels (by thresholding).
 _C.DISTILL.USE_TEACHER_LOGITS = False
 # Initialize the weights of the prompt encoder and mask decoder of the student from teacher.
 _C.DISTILL.INIT_FROM_TEACHER = True

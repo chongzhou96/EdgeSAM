@@ -1,6 +1,5 @@
 MODEL:
   TYPE: rep_vit_m1
-  DROP_PATH_RATE: 0.0
   PRETRAINED: weights/repvit_m1_distill_300.pth
 
 TRAIN:

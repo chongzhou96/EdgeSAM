@@ -196,7 +196,6 @@ if __name__ == '__main__':
     config.defrost()
     assert len(
         config.DISTILL.TEACHER_EMBED_PATH) > 0, "Please fill in the config DISTILL.TEACHER_EMBED_PATH"
-    config.DISTILL.ENABLED = True
     if not args.check_saved_embed:
         config.DISTILL.SAVE_TEACHER_EMBED = True
     config.freeze()
