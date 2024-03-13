@@ -222,6 +222,9 @@ class SamPredictor:
         if features is None and not self.is_image_set:
             raise RuntimeError("An image must be set with .set_image(...) before mask prediction.")
 
+        if features is None:
+            features = self.features
+
         if point_coords is not None:
             points = (point_coords, point_labels)
         else:

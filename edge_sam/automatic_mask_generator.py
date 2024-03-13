@@ -277,6 +277,7 @@ class SamAutomaticMaskGenerator:
         in_points = torch.as_tensor(transformed_points, device=self.predictor.device)
         in_labels = torch.ones(in_points.shape[0], dtype=torch.int, device=in_points.device)
         masks, iou_preds, _ = self.predictor.predict_torch(
+            None,
             in_points[:, None, :],
             in_labels[:, None],
             num_multimask_outputs=3,
