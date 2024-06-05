@@ -15,7 +15,7 @@
 [[`Paper`](https://arxiv.org/abs/2312.06660)] 
 [[`Project Page`](https://www.mmlab-ntu.com/project/edgesam/)]
 [[`Hugging Face Demo`](https://huggingface.co/spaces/chongzhou/EdgeSAM)]
-[[`iOS App (TBA)`]()]
+[[`iOS App`](https://apps.apple.com/us/app/cutcha-photo/id6478521132)]
 
 https://github.com/chongzhou96/EdgeSAM/assets/15973859/fe1cd104-88dc-4690-a5ea-ff48ae013db3
 
@@ -23,6 +23,7 @@ https://github.com/chongzhou96/EdgeSAM/assets/15973859/fe1cd104-88dc-4690-a5ea-f
 
 ## Updates
 
+* **2024/06/05**: Check out our iOS App [CutCha](https://apps.apple.com/us/app/cutcha-photo/id6478521132) powered by EdgeSAM.
 * **2024/01/01**: EdgeSAM is intergrated into [X-AnyLabeling](https://github.com/CVHub520/X-AnyLabeling).
 * **2023/12/19**: EdgeSAM is now supported in [ISAT](https://github.com/yatengLG/ISAT_with_segment_anything), a segmentation labeling tool.
 * **2023/12/16**: EdgeSAM is now supported in [Grounded-Segment-Anything](https://github.com/IDEA-Research/Grounded-Segment-Anything). Check out the [grounded-edge-sam demo](https://github.com/IDEA-Research/Grounded-Segment-Anything/blob/main/EfficientSAM/grounded_edge_sam.py). Thanks to the IDEA Research team!
