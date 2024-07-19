@@ -10,24 +10,26 @@ from torch.nn import functional as F
 
 from typing import Any, Dict, List, Tuple
 
-from .image_encoder import ImageEncoderViT
 from .mask_decoder import MaskDecoder
 from .prompt_encoder import PromptEncoder
-from ..utils.amg import calculate_stability_score
 
+from mmdet.models.dense_heads import RPNHead, CenterNetUpdateHead
+from mmdet.models.necks import FPN
+from projects.EfficientDet import efficientdet
+from mmengine import ConfigDict
 
 class Sam(nn.Module):
     mask_threshold: float = 0.0
     image_format: str = "RGB"
-    stability_score_offset: float = 1.0
 
     def __init__(
         self,
-        image_encoder: ImageEncoderViT,
+        image_encoder,
         prompt_encoder: PromptEncoder,
         mask_decoder: MaskDecoder,
         pixel_mean: List[float] = [123.675, 116.28, 103.53],
         pixel_std: List[float] = [58.395, 57.12, 57.375],
+        rpn_head=None
     ) -> None:
         """
         SAM predicts object masks from an image and input prompts.
@@ -48,13 +50,120 @@ class Sam(nn.Module):
         self.register_buffer("pixel_mean", torch.Tensor(pixel_mean).view(-1, 1, 1), False)
         self.register_buffer("pixel_std", torch.Tensor(pixel_std).view(-1, 1, 1), False)
 
+        self.rpn_head = None
+        self.fpn = None
+        if rpn_head == 'centernet':
+            self.fpn = FPN(
+                in_channels=[96, 192, 384],
+                out_channels=96,
+                num_outs=5
+            )
+            self.rpn_head = CenterNetUpdateHead(
+                num_classes=1,
+                in_channels=96,
+                stacked_convs=4,
+                feat_channels=96,
+                strides=[8, 16, 32, 64, 128]
+            )
+        elif rpn_head == 'rpn':
+            self.fpn = FPN(
+                in_channels=[96, 192, 384],
+                out_channels=96,
+                num_outs=5
+            )
+            self.rpn_head = RPNHead(
+                in_channels=96,
+                feat_channels=96,
+                anchor_generator=dict(
+                    type='AnchorGenerator',
+                    scales=[8],
+                    ratios=[0.5, 1.0, 2.0],
+                    strides=[4, 8, 16, 32, 64]),
+                bbox_coder=dict(
+                    type='DeltaXYWHBBoxCoder',
+                    target_means=[.0, .0, .0, .0],
+                    target_stds=[1.0, 1.0, 1.0, 1.0]),
+            )
+        elif rpn_head == 'efficient_det':
+            norm_cfg = dict(type='SyncBN', requires_grad=True, eps=1e-3, momentum=0.01)
+            self.fpn = efficientdet.BiFPN(
+                num_stages=3,
+                in_channels=[96, 192, 384],
+                out_channels=64,
+                start_level=0,
+                norm_cfg=norm_cfg
+            )
+            self.rpn_head = efficientdet.EfficientDetSepBNHead(
+                num_classes=1,
+                num_ins=5,
+                in_channels=64,
+                feat_channels=64,
+                stacked_convs=3,
+                norm_cfg=norm_cfg,
+                anchor_generator=dict(
+                    type='AnchorGenerator',
+                    octave_base_scale=4,
+                    scales_per_octave=3,
+                    ratios=[1.0, 0.5, 2.0],
+                    strides=[8, 16, 32, 64, 128],
+                    center_offset=0.5),
+                bbox_coder=dict(
+                    type='DeltaXYWHBBoxCoder',
+                    target_means=[.0, .0, .0, .0],
+                    target_stds=[1.0, 1.0, 1.0, 1.0])
+            )
+        self.use_rpn = self.rpn_head is not None
+
     @property
     def device(self) -> Any:
         return self.pixel_mean.device
 
+    # For FLOPs, params count, and speed test
     @torch.no_grad()
     def forward_dummy_encoder(self, x):
-        return self.image_encoder(x)
+        image_encoder_outs = self.image_encoder(x)
+        outs = (image_encoder_outs,)
+        if self.use_rpn:
+            image_embeddings = image_encoder_outs[-1]
+            proposals = self.forward_rpn(image_encoder_outs[:-1])
+            outs += (proposals[0].bboxes, proposals[0].scores)
+        else:
+            image_embeddings = image_encoder_outs
+        return outs
+
+    # For FLOPs and params count
+    @torch.no_grad()
+    def forward_dummy_decoder(self, image_embeddings, points):
+        sparse_embeddings, dense_embeddings = self.prompt_encoder(points=points, boxes=None, masks=None)
+        low_res_masks, iou_predictions = self.mask_decoder(
+            image_embeddings=image_embeddings,
+            image_pe=self.prompt_encoder.get_dense_pe(),
+            sparse_prompt_embeddings=sparse_embeddings,
+            dense_prompt_embeddings=dense_embeddings,
+            multimask_output=1,
+        )
+        return low_res_masks, iou_predictions
+
+    @torch.no_grad()
+    def forward_rpn(self, features, score_thr=0.05, with_nms=False):
+        fpn_out = self.fpn(features)
+        rpn_out = self.rpn_head(fpn_out)
+
+        batch_size = features[0].shape[0]
+        batch_img_metas = [dict(
+            img_shape=(1024, 1024)
+        )] * batch_size
+
+        cfg = ConfigDict(
+            nms_pre=2000,
+            min_bbox_size=0,
+            score_thr=score_thr,
+            nms=dict(type='nms', iou_threshold=0.7),
+            max_per_img=1000)
+
+        predictions = self.rpn_head.predict_by_feat(
+            *rpn_out, batch_img_metas=batch_img_metas, with_nms=with_nms, rescale=False, cfg=cfg)
+        return predictions
 
     @torch.no_grad()
     def forward(
@@ -104,7 +213,12 @@ class Sam(nn.Module):
                 to subsequent iterations of prediction.
         """
         input_images = torch.stack([self.preprocess(x["image"]) for x in batched_input], dim=0)
-        image_embeddings = self.image_encoder(input_images)
+        image_encoder_outs = self.image_encoder(input_images)
+        if self.use_rpn:
+            image_embeddings = image_encoder_outs[-1]
+            proposals = self.forward_rpn(image_encoder_outs[:-1])
+        else:
+            image_embeddings = image_encoder_outs
 
         outputs = []
         for image_record, curr_embedding in zip(batched_input, image_embeddings):
@@ -124,10 +238,6 @@ class Sam(nn.Module):
                 dense_prompt_embeddings=dense_embeddings,
                 num_multimask_outputs=num_multimask_outputs,
             )
-            if use_stability_score:
-                iou_predictions = calculate_stability_score(
-                    low_res_masks, self.mask_threshold, self.stability_score_offset
-                )
             masks = self.postprocess_masks(
                 low_res_masks,
                 input_size=image_record["image"].shape[-2:],

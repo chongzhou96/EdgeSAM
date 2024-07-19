@@ -8,9 +8,10 @@ import torch
 from torch import Tensor, nn
 
 import math
-from typing import Tuple, Type
+from typing import Type
 
 from .common import MLPBlock
+import loralib
 
 
 class TwoWayTransformer(nn.Module):
@@ -22,6 +23,7 @@ class TwoWayTransformer(nn.Module):
         mlp_dim: int,
         activation: Type[nn.Module] = nn.ReLU,
         attention_downsample_rate: int = 2,
+        lora=False
     ) -> None:
         """
         A transformer decoder that attends to an input image using
@@ -51,20 +53,16 @@ class TwoWayTransformer(nn.Module):
                     activation=activation,
                     attention_downsample_rate=attention_downsample_rate,
                     skip_first_layer_pe=(i == 0),
+                    lora=lora
                 )
             )
 
         self.final_attn_token_to_image = Attention(
-            embedding_dim, num_heads, downsample_rate=attention_downsample_rate
+            embedding_dim, num_heads, downsample_rate=attention_downsample_rate, lora=lora
         )
         self.norm_final_attn = nn.LayerNorm(embedding_dim)
 
-    def forward(
-        self,
-        image_embedding: Tensor,
-        image_pe: Tensor,
-        point_embedding: Tensor,
-    ) -> Tuple[Tensor, Tensor]:
+    def forward(self, image_embedding, image_pe, point_embedding, kd_targets=None):
         """
         Args:
           image_embedding (torch.Tensor): image to attend to. Should be shape
@@ -88,18 +86,13 @@ class TwoWayTransformer(nn.Module):
         keys = image_embedding
 
         # Apply transformer blocks and final layernorm
-        for layer in self.layers:
-            queries, keys = layer(
-                queries=queries,
-                keys=keys,
-                query_pe=point_embedding,
-                key_pe=image_pe,
-            )
+        for idx, layer in enumerate(self.layers):
+            queries, keys = layer(queries, keys, point_embedding, image_pe, kd_targets, idx)
 
         # Apply the final attention layer from the points to the image
         q = queries + point_embedding
         k = keys + image_pe
-        attn_out = self.final_attn_token_to_image(q=q, k=k, v=keys)
+        attn_out = self.final_attn_token_to_image(q, k, keys, kd_targets, 't2i_final')
         queries = queries + attn_out
         queries = self.norm_final_attn(queries)
 
@@ -115,6 +108,7 @@ class TwoWayAttentionBlock(nn.Module):
         activation: Type[nn.Module] = nn.ReLU,
         attention_downsample_rate: int = 2,
         skip_first_layer_pe: bool = False,
+        lora=False
     ) -> None:
         """
         A transformer block with four layers: (1) self-attention of sparse
@@ -130,11 +124,11 @@ class TwoWayAttentionBlock(nn.Module):
           skip_first_layer_pe (bool): skip the PE on the first layer
         """
         super().__init__()
-        self.self_attn = Attention(embedding_dim, num_heads)
+        self.self_attn = Attention(embedding_dim, num_heads, lora=lora)
         self.norm1 = nn.LayerNorm(embedding_dim)
 
         self.cross_attn_token_to_image = Attention(
-            embedding_dim, num_heads, downsample_rate=attention_downsample_rate
+            embedding_dim, num_heads, downsample_rate=attention_downsample_rate, lora=lora
         )
         self.norm2 = nn.LayerNorm(embedding_dim)
 
@@ -143,27 +137,28 @@ class TwoWayAttentionBlock(nn.Module):
 
         self.norm4 = nn.LayerNorm(embedding_dim)
         self.cross_attn_image_to_token = Attention(
-            embedding_dim, num_heads, downsample_rate=attention_downsample_rate
+            embedding_dim, num_heads, downsample_rate=attention_downsample_rate, lora=lora
         )
 
         self.skip_first_layer_pe = skip_first_layer_pe
 
     def forward(
-        self, queries: Tensor, keys: Tensor, query_pe: Tensor, key_pe: Tensor
-    ) -> Tuple[Tensor, Tensor]:
+        self, queries: Tensor, keys: Tensor, query_pe: Tensor, key_pe: Tensor,
+        kd_targets=None, layer_idx=None
+    ):
         # Self attention block
         if self.skip_first_layer_pe:
-            queries = self.self_attn(q=queries, k=queries, v=queries)
+            queries = self.self_attn(queries, queries, queries, kd_targets, f't2t_{layer_idx}')
         else:
             q = queries + query_pe
-            attn_out = self.self_attn(q=q, k=q, v=queries)
+            attn_out = self.self_attn(q, q, queries, kd_targets, f't2t_{layer_idx}')
             queries = queries + attn_out
         queries = self.norm1(queries)
 
         # Cross attention block, tokens attending to image embedding
         q = queries + query_pe
         k = keys + key_pe
-        attn_out = self.cross_attn_token_to_image(q=q, k=k, v=keys)
+        attn_out = self.cross_attn_token_to_image(q, k, keys, kd_targets, f't2i_{layer_idx}')
         queries = queries + attn_out
         queries = self.norm2(queries)
 
@@ -175,7 +170,7 @@ class TwoWayAttentionBlock(nn.Module):
         # Cross attention block, image embedding attending to tokens
         q = queries + query_pe
         k = keys + key_pe
-        attn_out = self.cross_attn_image_to_token(q=k, k=q, v=queries)
+        attn_out = self.cross_attn_image_to_token(k, q, queries, kd_targets, f'i2t_{layer_idx}')
         keys = keys + attn_out
         keys = self.norm4(keys)
 
@@ -193,6 +188,7 @@ class Attention(nn.Module):
         embedding_dim: int,
         num_heads: int,
         downsample_rate: int = 1,
+        lora=False
     ) -> None:
         super().__init__()
         self.embedding_dim = embedding_dim
@@ -200,9 +196,13 @@ class Attention(nn.Module):
         self.num_heads = num_heads
         assert self.internal_dim % num_heads == 0, "num_heads must divide embedding_dim."
 
-        self.q_proj = nn.Linear(embedding_dim, self.internal_dim)
+        if lora:
+            self.q_proj = loralib.Linear(embedding_dim, self.internal_dim, r=16)
+            self.v_proj = loralib.Linear(embedding_dim, self.internal_dim, r=16)
+        else:
+            self.q_proj = nn.Linear(embedding_dim, self.internal_dim)
+            self.v_proj = nn.Linear(embedding_dim, self.internal_dim)
         self.k_proj = nn.Linear(embedding_dim, self.internal_dim)
-        self.v_proj = nn.Linear(embedding_dim, self.internal_dim)
         self.out_proj = nn.Linear(self.internal_dim, embedding_dim)
 
     def _separate_heads(self, x: Tensor, num_heads: int) -> Tensor:
@@ -215,7 +215,7 @@ class Attention(nn.Module):
         x = x.transpose(1, 2)
         return x.reshape(b, n_tokens, n_heads * c_per_head)  # B x N_tokens x C
 
-    def forward(self, q: Tensor, k: Tensor, v: Tensor) -> Tensor:
+    def forward(self, q: Tensor, k: Tensor, v: Tensor, kd_targets=None, target_name=None):
         # Input projections
         q = self.q_proj(q)
         k = self.k_proj(k)
@@ -231,6 +231,9 @@ class Attention(nn.Module):
         attn = q @ k.permute(0, 1, 3, 2)  # B x N_heads x N_tokens x N_tokens
         attn = attn / math.sqrt(c_per_head)
         attn = torch.softmax(attn, dim=-1)
+
+        if kd_targets is not None:
+            kd_targets[target_name] = attn
 
         # Get output
         out = attn @ v

@@ -1,0 +1,25 @@
+MODEL:
+  TYPE: rep_vit_m1
+  PRETRAINED: weights/repvit_m1_distill_300.pth
+
+TRAIN:
+  EPOCHS: 10
+  BASE_LR: 1.0e-1
+  WARMUP_EPOCHS: 5
+  WEIGHT_DECAY: 0.01
+  FIND_UNUSED_PARAMETERS: False
+
+DATA:
+  IMG_SIZE: 1024
+  MEAN_AND_STD_TYPE: default
+  DATASET: sa1b
+  DATA_PATH: datasets/SA-1B/
+
+DISTILL:
+  EMBED_DIM: 256
+  TEACHER_EMBED_PATH: teacher_embed/sa-1b/
+  NO_RAND: True
+  FUSE: True
+  PIXEL_WISE: 1.0
+
+AMP_ENABLE: False

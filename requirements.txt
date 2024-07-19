@@ -1,5 +1,5 @@
-torch
-torchvision
+torch==2.0.0
+torchvision==0.15.1
 opencv-python==4.8.0.74
 pycocotools==2.0.6
 matplotlib==3.7.2
@@ -7,3 +7,10 @@ gradio==4.7.1
 notebook==7.0.6
 timm==0.4.12
 coremltools==7.1
+yacs==0.1.8
+loralib==0.1.2
+kornia==0.7.1
+wandb==0.16.3
+mmengine==0.10.3
+mmcv==2.0.0rc4
+tensorboard==2.14.0
