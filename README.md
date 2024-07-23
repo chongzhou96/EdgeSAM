@@ -76,6 +76,7 @@ Our approach involves distilling the original ViT-based SAM image encoder into a
 
 - [Installation](#installation)
 - [Usage](#usage)
+- [Train and Eval](#train)
 - [Web Demo](#demo)
 - [CoreML / ONNX Export](#export)
 - [Checkpoints](#checkpoints)
@@ -128,6 +129,9 @@ masks, _, _ = predictor.predict(<input_prompts>)
 ```
 
 Since EdgeSAM follows the same encoder-decoder architecture as SAM, their usages are very similar. One minor difference is that EdgeSAM allows outputting 1, 3, and 4 mask candidates for each prompt, while SAM yields either 1 or 3 masks. For more details, please refer to the [example Jupyter Notebook](https://github.com/chongzhou96/EdgeSAM/blob/master/notebooks/predictor_example.ipynb).
+
+## Train and Eval <a name="train"></a>
+Please refer to [README_TRAIN.md](README_TRAIN.md) for more details.
 
 ## Web Demo <a name="demo"></a>
 After installing EdgeSAM and downloading the checkpoints. You can start an interactive web demo with the following command:
