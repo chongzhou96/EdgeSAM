@@ -2,17 +2,17 @@
 **Prompt-In-the-Loop Distillation for On-Device Deployment of SAM**
 
 
-[Chong Zhou<sup>1</sup>](https://chongzhou96.github.io/), 
-[Xiangtai Li<sup>1</sup>](https://lxtgh.github.io/), 
-[Chen Change Loy<sup>1*</sup>](https://www.mmlab-ntu.com/person/ccloy/), 
+[Chong Zhou<sup>1</sup>](https://chongzhou96.github.io/),
+[Xiangtai Li<sup>1</sup>](https://lxtgh.github.io/),
+[Chen Change Loy<sup>1*</sup>](https://www.mmlab-ntu.com/person/ccloy/),
 [Bo Dai<sup>2</sup>](https://daibo.info/)
 
 (*corresponding author)
 
-[<sup>1</sup>S-Lab, Nanyang Technological University](https://www.mmlab-ntu.com/), 
+[<sup>1</sup>S-Lab, Nanyang Technological University](https://www.mmlab-ntu.com/),
 [<sup>2</sup>Shanghai Artificial Intelligence Laboratory](https://www.shlab.org.cn/)
 
-[[`Paper`](https://arxiv.org/abs/2312.06660)] 
+[[`Paper`](https://arxiv.org/abs/2312.06660)]
 [[`Project Page`](https://www.mmlab-ntu.com/project/edgesam/)]
 [[`Hugging Face Demo`](https://huggingface.co/spaces/chongzhou/EdgeSAM)]
 [[`iOS App`](https://apps.apple.com/us/app/cutcha-photo/id6478521132)]
@@ -23,6 +23,7 @@ https://github.com/chongzhou96/EdgeSAM/assets/15973859/fe1cd104-88dc-4690-a5ea-f
 
 ## Updates
 
+* **2024/07/23**: We release our training and evaluation code, check out [README_TRAIN.md](README_TRAIN.md).
 * **2024/06/05**: Check out our iOS App [CutCha](https://apps.apple.com/us/app/cutcha-photo/id6478521132) powered by EdgeSAM.
 * **2024/01/01**: EdgeSAM is intergrated into [X-AnyLabeling](https://github.com/CVHub520/X-AnyLabeling).
 * **2023/12/19**: EdgeSAM is now supported in [ISAT](https://github.com/yatengLG/ISAT_with_segment_anything), a segmentation labeling tool.
@@ -32,8 +33,8 @@ https://github.com/chongzhou96/EdgeSAM/assets/15973859/fe1cd104-88dc-4690-a5ea-f
 
 ## Overview
 
-**EdgeSAM** is an accelerated variant of the Segment Anything Model (SAM), optimized for efficient execution on edge devices with minimal compromise in performance. 
-It achieves a **40-fold speed increase** compared to the original SAM, and outperforms MobileSAM, being **14 times as fast** when deployed on edge devices while enhancing the mIoUs on COCO and LVIS by 2.3 and 3.2 respectively. 
+**EdgeSAM** is an accelerated variant of the Segment Anything Model (SAM), optimized for efficient execution on edge devices with minimal compromise in performance.
+It achieves a **40-fold speed increase** compared to the original SAM, and outperforms MobileSAM, being **14 times as fast** when deployed on edge devices while enhancing the mIoUs on COCO and LVIS by 2.3 and 3.2 respectively.
 EdgeSAM is also the first SAM variant that can run at **over 30 FPS** on an iPhone 14.
 
 <p align="center">
@@ -43,21 +44,21 @@ EdgeSAM is also the first SAM variant that can run at **over 30 FPS** on an iPho
 *In this figure, we show the encoder throughput of EdgeSAM compared with SAM and MobileSAM as well as the mIoU performance on the SA-1K dataset (sampled from SA-1B) with box and point prompts.*
 
 <details>
-  
+
 <summary> <strong>Approach</strong> </summary>
 
 Our approach involves distilling the original ViT-based SAM image encoder into a purely CNN-based architecture, better suited for edge devices. We carefully benchmark various distillation strategies and demonstrate that task-agnostic encoder distillation fails to capture the full knowledge embodied in SAM. To overcome this bottleneck, we include both the prompt encoder and mask decoder in the distillation process, with box and point prompts in the loop, so that the distilled model can accurately capture the intricate dynamics between user input and mask generation.
-  
+
   <p align="center">
     <img width="612" alt="arch" src="https://github.com/chongzhou96/EdgeSAM/assets/15973859/e706101a-c3d5-4d99-bea5-c6735ce25237">
   </p>
-  
+
 </details>
 
 <details>
-  
+
 <summary> <strong>Performance</strong> </summary>
-  
+
 | Method      | Train Set | COCO AP | COCO AP<sub>s</sub> | COCO AP<sub>m</sub> | COCO AP<sub>l</sub> | GFLops | MParam. | FPS iPhone 14 | FPS 2080 Ti | FPS 3090 |
 |-------------|-----------|---------|---------------------|---------------------|---------------------|--------|---------|---------------|-------------|----------|
 | SAM         | SA-1B     | 46.1    | 33.6                | 51.9                | 57.7                | 2734.8 | 641.1   | -             | 4.3         | -        |
@@ -85,7 +86,7 @@ Our approach involves distilling the original ViT-based SAM image encoder into a
 
 ## Installation <a name="installation"></a>
 
-The code requires `python>=3.8` and we use `torch==2.0.0` and `torchvision==0.15.1`. Please refer to the 
+The code requires `python>=3.8` and we use `torch==2.0.0` and `torchvision==0.15.1`. Please refer to the
 [official PyTorch installation instructions](https://pytorch.org/get-started/locally/).
 
 1. Clone the repository locally:
@@ -187,9 +188,9 @@ Since EdgeSAM doesn't perform knowledge distillation on the IoU token of the ori
 The following shows the performance reports of the EdgeSAM CoreML models measured by Xcode on an iPhone 14 (left: encoder, right: decoder):
 
 <p align="center">
-  
+
   ![xcode](https://github.com/chongzhou96/EdgeSAM/assets/15973859/8df54f76-24c9-4ad2-af6d-086b971d073b)
-  
+
 </p>
 
 <details>
@@ -199,8 +200,8 @@ The following shows the performance reports of the EdgeSAM CoreML models measure
 
   Since CoreML doesn't support interpolation with dynamic target sizes, the converted CoreML models do not contain the pre-processing, i.e., resize-norm-pad, and the post-processing, i.e., resize back to the original size.
 
-  The encoder takes a `1x3x1024x1024` image as the input and outputs a `1x256x64x64` image embedding. The decoder then takes the image embedding together with point coordinates and point labels as the input. The point coordinates follow the `(height, width)` format with the top-left corner as the `(0, 0)`. The choices of point labels are `0: negative point`, `1: positive point`, `2: top-left corner of box`, and `3: bottom-right corner of box`. 
-  
+  The encoder takes a `1x3x1024x1024` image as the input and outputs a `1x256x64x64` image embedding. The decoder then takes the image embedding together with point coordinates and point labels as the input. The point coordinates follow the `(height, width)` format with the top-left corner as the `(0, 0)`. The choices of point labels are `0: negative point`, `1: positive point`, `2: top-left corner of box`, and `3: bottom-right corner of box`.
+
 </details>
 
 **ONNX**
