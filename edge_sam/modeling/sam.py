@@ -13,9 +13,18 @@ from typing import Any, Dict, List, Tuple
 from .mask_decoder import MaskDecoder
 from .prompt_encoder import PromptEncoder
 
-from mmdet.models.dense_heads import RPNHead, CenterNetUpdateHead
-from mmdet.models.necks import FPN
-from projects.EfficientDet import efficientdet
+try:
+    from mmdet.models.dense_heads import RPNHead, CenterNetUpdateHead
+    from mmdet.models.necks import FPN
+except ImportError:
+    RPNHead = None
+    CenterNetUpdateHead = None
+    FPN = None
+
+try:
+    from projects.EfficientDet import efficientdet
+except ImportError:
+    efficientdet = None
 from mmengine import ConfigDict
 
 class Sam(nn.Module):
@@ -85,6 +94,8 @@ class Sam(nn.Module):
                     target_stds=[1.0, 1.0, 1.0, 1.0]),
             )
         elif rpn_head == 'efficient_det':
+            if efficientdet is None:
+                raise ImportError("projects.EfficientDet not found. Please ensure the submodule is initialized or the code is available.")
             norm_cfg = dict(type='SyncBN', requires_grad=True, eps=1e-3, momentum=0.01)
             self.fpn = efficientdet.BiFPN(
                 num_stages=3,

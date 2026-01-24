@@ -101,7 +101,7 @@ def save_embeddings_one_epoch(config, model, data_loader, epoch):
         samples = samples.cuda(non_blocking=True)
         seeds = np.stack(seeds, axis=0)
 
-        with torch.cuda.amp.autocast(enabled=config.AMP_ENABLE):
+        with torch.amp.autocast("cuda", enabled=config.AMP_ENABLE):
             outputs = model(samples)
 
         torch.cuda.synchronize()
@@ -158,7 +158,7 @@ def check_embeddings_one_epoch(config, model, data_loader, epoch):
     for idx, ((samples, _), (saved_embeddings, seeds)) in enumerate(data_loader):
         samples = samples.cuda(non_blocking=True)
 
-        with torch.cuda.amp.autocast(enabled=config.AMP_ENABLE):
+        with torch.amp.autocast("cuda", enabled=config.AMP_ENABLE):
             outputs = model(samples)
 
         if saved_embeddings.size() != outputs.size():
