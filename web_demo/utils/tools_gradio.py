@@ -173,7 +173,7 @@ def fast_show_mask_gpu(
     mask_image = torch.unsqueeze(annotation, -1) * visual
     # 按index取数，index指每个位置选哪个batch的数，把mask_image转成一个batch的形式
     mask = torch.zeros((height, weight, 4)).to(device)
-    h_indices, w_indices = torch.meshgrid(torch.arange(height), torch.arange(weight))
+    h_indices, w_indices = torch.meshgrid(torch.arange(height), torch.arange(weight), indexing='ij')
     indices = (index[h_indices, w_indices], h_indices, w_indices, slice(None))
     # 使用向量化索引更新show的值
     mask[h_indices, w_indices, :] = mask_image[indices]

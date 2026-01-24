@@ -249,7 +249,7 @@ def train_one_epoch_distill_using_saved_embeddings(args, config, model, data_loa
             img_size_pad = (model_without_ddp.image_encoder.img_size, model_without_ddp.image_encoder.img_size)
             mask_threshold = model_without_ddp.mask_threshold
 
-        with torch.cuda.amp.autocast(enabled=config.AMP_ENABLE):
+        with torch.amp.autocast("cuda", enabled=config.AMP_ENABLE):
             if config.DISTILL.ENCODER_ONLY:
                 encoder_embeddings = model(samples)
             else:
@@ -395,7 +395,7 @@ def train_one_epoch_distill_using_saved_embeddings(args, config, model, data_loa
                         points = (point, label)
                         prev_point = points
 
-                with torch.cuda.amp.autocast(enabled=config.AMP_ENABLE):
+                with torch.amp.autocast("cuda", enabled=config.AMP_ENABLE):
                     sparse_emb_s, dense_emb_s = model(
                         mode='prompt_encoder',
                         points=points, boxes=boxes,
